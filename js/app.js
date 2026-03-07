@@ -447,18 +447,17 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
     e.target.value = '';
 });
 
-// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ для извлечения области (голова, рука, нога и т.д.) ---
-function extractArea(dispersion) {
-    if (!dispersion) return 'другое';
-    // Ищем часть до двоеточия (например, "голова:" или "спина:")
+// --- Функции для поиска и общих точек ---
+
+// Вспомогательная функция для получения краткого расположения из dispersion
+function getShortArea(dispersion) {
+    if (!dispersion) return '';
     const colonIndex = dispersion.indexOf(':');
     if (colonIndex > 0) {
         return dispersion.substring(0, colonIndex).trim();
     }
     return 'другое';
 }
-
-// --- Функции для поиска и общих точек ---
 
 function renderPathologyCheckboxes() {
     const container = document.getElementById('pathologyCheckboxList');
@@ -530,9 +529,9 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
         detailsDiv.style.display = 'none';
         let listHtml = '';
         matched.forEach(point => {
-            const area = extractArea(point.dispersion);
+            const shortArea = getShortArea(point.dispersion);
             listHtml += `<div class="point-search-item" data-point-name="${point.name}" data-pathology="${point.pathologyName}">
-                • ${point.name} <span class="badge bg-secondary">${area}</span> <span class="text-muted">(${point.pathologyName})</span>
+                • ${point.name} <span class="text-muted">(${shortArea}, ${point.pathologyName})</span>
             </div>`;
         });
         resultsDiv.innerHTML = listHtml;
@@ -559,36 +558,31 @@ document.getElementById('findCommonPointsBtn')?.addEventListener('click', () => 
 
     const pointsPerPathology = selectedPathologies.map(name => {
         const path = pathologiesData.find(p => p.name === name);
-        return path ? path.point.map(p => p.name) : [];
+        return path ? path.point.map(p => ({ name: p.name, dispersion: p.dispersion })) : [];
     });
 
-    const commonPoints = pointsPerPathology.reduce((acc, curr) => acc.filter(name => curr.includes(name)));
+    // Получаем список общих названий точек
+    const commonPointNames = pointsPerPathology
+        .map(arr => arr.map(p => p.name))
+        .reduce((acc, curr) => acc.filter(name => curr.includes(name)));
 
     const resultDiv = document.getElementById('commonPointsResult');
     if (!resultDiv) return;
-    if (commonPoints.length === 0) {
+    if (commonPointNames.length === 0) {
         resultDiv.innerHTML = '<div class="text-muted">Нет общих точек</div>';
         return;
     }
 
-    // Собираем дополнительную информацию для каждой общей точки
+    // Для каждой общей точки нужно взять её расположение из первой патологии (или любой)
     let html = '';
-    commonPoints.forEach(pointName => {
-        // Находим первую патологию, где есть эта точка (из выбранных)
-        const pathWithPoint = selectedPathologies.find(pName => {
-            const path = pathologiesData.find(p => p.name === pName);
-            return path?.point.some(pt => pt.name === pointName);
-        });
-        
-        if (pathWithPoint) {
-            const pathology = pathologiesData.find(p => p.name === pathWithPoint);
-            const point = pathology.point.find(p => p.name === pointName);
-            const area = extractArea(point.dispersion);
-            
-            html += `<div class="point-common-item" data-point-name="${pointName}" data-pathology="${pathWithPoint}">
-                • ${pointName} <span class="badge bg-secondary">${area}</span> <span class="text-muted">(${pathWithPoint})</span>
-            </div>`;
-        }
+    commonPointNames.forEach(pointName => {
+        // Найдём точку в первой выбранной патологии, чтобы получить dispersion
+        const firstPathology = pathologiesData.find(p => p.name === selectedPathologies[0]);
+        const point = firstPathology?.point.find(p => p.name === pointName);
+        const shortArea = point ? getShortArea(point.dispersion) : '';
+        html += `<div class="point-common-item" data-point-name="${pointName}" data-pathology="${selectedPathologies[0]}">
+            • ${pointName} <span class="text-muted">(${shortArea})</span>
+        </div>`;
     });
     resultDiv.innerHTML = html;
 
