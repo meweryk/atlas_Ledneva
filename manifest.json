@@ -2,12 +2,12 @@
   "name": "Атлас Леднёва",
   "short_name": "Атлас",
   "description": "Справочник точек акупунктуры и патологий",
-  "start_url": "/",
+  "start_url": "/atlas_Ledneva/",
   "display": "standalone",
   "background_color": "#f5f0e6",
   "theme_color": "#f5f0e6",
   "orientation": "portrait",
-  "scope": "/",
+  "scope": "/atlas_Ledneva/",
   "icons": [
     {
       "src": "pictures/icon-72.png",

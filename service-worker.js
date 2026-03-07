@@ -3,20 +3,18 @@ const STATIC_CACHE_NAME = 'atlas-static-v1';
 const IMAGES_CACHE_NAME = 'atlas-images-v1';
 const DATA_CACHE_NAME = 'atlas-data-v1';
 
-// Ресурсы для предварительного кэширования
+// Используем относительные пути! Начинаются с ./
 const STATIC_URLS = [
-    '/',
-    '/index.html',
-    '/css/style.css',
-    '/js/app.js',
-    '/manifest.json',
+    './',
+    './index.html',
+    './css/style.css',
+    './js/app.js',
+    './manifest.json',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
-    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css',
-    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2'
+    'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
 ];
 
-// Установка и кэширование статики
 self.addEventListener('install', event => {
     event.waitUntil(
         Promise.all([
@@ -27,88 +25,45 @@ self.addEventListener('install', event => {
     );
 });
 
-// Активация и очистка старых кэшей
 self.addEventListener('activate', event => {
     event.waitUntil(
         Promise.all([
-            // Очищаем старые версии кэшей
             caches.keys().then(cacheNames => {
                 return Promise.all(
                     cacheNames.map(name => {
-                        if (!name.includes('v1') && name !== CACHE_NAME) {
+                        if (!name.includes('v1')) {
                             return caches.delete(name);
                         }
                     })
                 );
             }),
-            // Захватываем контроль над всеми клиентами
             self.clients.claim()
         ])
     );
 });
 
-// Стратегия кэширования: cache-first для статики, network-first для данных
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     
-    // Для изображений из папки pictures
-    if (url.pathname.startsWith('/pictures/')) {
+    // Для изображений из папки pictures - используем относительный путь
+    if (url.pathname.includes('/pictures/')) {
         event.respondWith(
-            caches.open(IMAGES_CACHE_NAME).then(cache => 
+            caches.open(IMAGES_CACHE_NAME).then(cache =>
                 cache.match(event.request).then(response => {
                     return response || fetch(event.request).then(networkResponse => {
                         cache.put(event.request, networkResponse.clone());
                         return networkResponse;
                     });
-                })
+                }).catch(() => fetch(event.request))
             )
         );
         return;
     }
-
-    // Для point.json - network-first с обновлением кэша
+    
+    // Для point.json - network-first
     if (url.pathname.endsWith('point.json')) {
         event.respondWith(
             fetch(event.request)
-                .then(response => {
-                    const responseClone = response.clone();
-                    caches.open(DATA_CACHE_NAME).then(cache => {
-                        cache.put(event.request, responseClone);
-                    });
-                    return response;
-                })
-                .catch(() => caches.match(event.request))
-        );
-        return;
-    }
-
-    // Для статики (css, js, html, bootstrap) - cache-first
-    if (STATIC_URLS.includes(url.pathname) || 
-        url.pathname.endsWith('.css') || 
-        url.pathname.endsWith('.js') || 
-        url.pathname.endsWith('.html') ||
-        url.hostname.includes('bootstrap')) {
-        
-        event.respondWith(
-            caches.match(event.request).then(response => {
-                return response || fetch(event.request).then(networkResponse => {
-                    // Кэшируем новые статические ресурсы
-                    if (networkResponse.ok) {
-                        const responseClone = networkResponse.clone();
-                        caches.open(STATIC_CACHE_NAME).then(cache => {
-                            cache.put(event.request, responseClone);
-                        });
-                    }
-                    return networkResponse;
-                });
-            })
-        );
-        return;
-    }
-
-    // Для всего остального - network-first
-    event.respondWith(
-        fetch(event.request)
             .then(response => {
                 const responseClone = response.clone();
                 caches.open(DATA_CACHE_NAME).then(cache => {
@@ -117,17 +72,25 @@ self.addEventListener('fetch', event => {
                 return response;
             })
             .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+    
+    // Для остальных запросов - cache-first с относительными путями
+    event.respondWith(
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request).then(networkResponse => {
+                if (networkResponse.ok) {
+                    const responseClone = networkResponse.clone();
+                    caches.open(STATIC_CACHE_NAME).then(cache => {
+                        cache.put(event.request, responseClone);
+                    });
+                }
+                return networkResponse;
+            }).catch(() => {
+                // Если всё упало, возвращаем заглушку или ничего
+                return new Response('Offline', { status: 503 });
+            });
+        })
     );
 });
-
-// Фоновая синхронизация для сохранения данных (опционально)
-self.addEventListener('sync', event => {
-    if (event.tag === 'sync-data') {
-        event.waitUntil(syncData());
-    }
-});
-
-async function syncData() {
-    // Здесь можно реализовать синхронизацию с сервером, если нужно
-    console.log('Фоновая синхронизация данных');
-}
