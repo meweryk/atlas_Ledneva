@@ -447,6 +447,17 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
     e.target.value = '';
 });
 
+// --- ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ для извлечения области (голова, рука, нога и т.д.) ---
+function extractArea(dispersion) {
+    if (!dispersion) return 'другое';
+    // Ищем часть до двоеточия (например, "голова:" или "спина:")
+    const colonIndex = dispersion.indexOf(':');
+    if (colonIndex > 0) {
+        return dispersion.substring(0, colonIndex).trim();
+    }
+    return 'другое';
+}
+
 // --- Функции для поиска и общих точек ---
 
 function renderPathologyCheckboxes() {
@@ -480,7 +491,11 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
     const allPoints = [];
     pathologiesData.forEach(pathology => {
         pathology.point.forEach(point => {
-            allPoints.push({ ...point, pathologyName: pathology.name, pathologyLinks: pathology.links || [] });
+            allPoints.push({ 
+                ...point, 
+                pathologyName: pathology.name, 
+                pathologyLinks: pathology.links || [] 
+            });
         });
     });
 
@@ -515,7 +530,10 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
         detailsDiv.style.display = 'none';
         let listHtml = '';
         matched.forEach(point => {
-            listHtml += `<div class="point-search-item" data-point-name="${point.name}" data-pathology="${point.pathologyName}">• ${point.name}</div>`;
+            const area = extractArea(point.dispersion);
+            listHtml += `<div class="point-search-item" data-point-name="${point.name}" data-pathology="${point.pathologyName}">
+                • ${point.name} <span class="badge bg-secondary">${area}</span> <span class="text-muted">(${point.pathologyName})</span>
+            </div>`;
         });
         resultsDiv.innerHTML = listHtml;
 
@@ -553,9 +571,24 @@ document.getElementById('findCommonPointsBtn')?.addEventListener('click', () => 
         return;
     }
 
+    // Собираем дополнительную информацию для каждой общей точки
     let html = '';
     commonPoints.forEach(pointName => {
-        html += `<div class="point-common-item" data-point-name="${pointName}" data-pathology="${selectedPathologies[0]}">• ${pointName}</div>`;
+        // Находим первую патологию, где есть эта точка (из выбранных)
+        const pathWithPoint = selectedPathologies.find(pName => {
+            const path = pathologiesData.find(p => p.name === pName);
+            return path?.point.some(pt => pt.name === pointName);
+        });
+        
+        if (pathWithPoint) {
+            const pathology = pathologiesData.find(p => p.name === pathWithPoint);
+            const point = pathology.point.find(p => p.name === pointName);
+            const area = extractArea(point.dispersion);
+            
+            html += `<div class="point-common-item" data-point-name="${pointName}" data-pathology="${pathWithPoint}">
+                • ${pointName} <span class="badge bg-secondary">${area}</span> <span class="text-muted">(${pathWithPoint})</span>
+            </div>`;
+        }
     });
     resultDiv.innerHTML = html;
 
@@ -575,33 +608,3 @@ document.getElementById('clearCommonPointsBtn')?.addEventListener('click', () =>
     const resultDiv = document.getElementById('commonPointsResult');
     if (resultDiv) resultDiv.innerHTML = '';
 });
-
-// Добавьте в конец app.js
-
-// Предзагрузка всех изображений из папки pictures
-async function preloadImages() {
-    if (!navigator.onLine) return;
-    
-    // Получаем список всех изображений из данных
-    const imageUrls = new Set();
-    pathologiesData.forEach(pathology => {
-        if (pathology.links) {
-            pathology.links.forEach(link => imageUrls.add(link));
-        }
-        pathology.point.forEach(point => {
-            if (point.images) {
-                point.images.forEach(img => imageUrls.add(img));
-            }
-        });
-    });
-
-    // Загружаем каждое изображение в кэш
-    imageUrls.forEach(url => {
-        if (url.startsWith('pictures/')) {
-            fetch(url).catch(err => console.log('Ошибка загрузки изображения:', url));
-        }
-    });
-}
-
-// Вызываем после загрузки данных
-setTimeout(preloadImages, 5000); // через 5 секунд после загрузки страницы
