@@ -1,0 +1,59 @@
+{
+  "name": "Атлас Леднёва",
+  "short_name": "Атлас",
+  "description": "Справочник точек акупунктуры и патологий",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f0e6",
+  "theme_color": "#f5f0e6",
+  "orientation": "portrait",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "pictures/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "pictures/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["medical", "reference"],
+  "lang": "ru",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "related_applications": []
+}
