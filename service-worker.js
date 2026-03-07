@@ -1,7 +1,7 @@
-const CACHE_NAME = 'atlas-ledneva-v2';
-const STATIC_CACHE_NAME = 'atlas-static-v2';
-const IMAGES_CACHE_NAME = 'atlas-images-v2';
-const DATA_CACHE_NAME = 'atlas-data-v2';
+const CACHE_NAME = 'atlas-ledneva-v2.1';
+const STATIC_CACHE_NAME = 'atlas-static-v2.1';
+const IMAGES_CACHE_NAME = 'atlas-images-v2.1';
+const DATA_CACHE_NAME = 'atlas-data-v2.1';
 
 // Используем относительные пути! Начинаются с ./
 const STATIC_URLS = [
