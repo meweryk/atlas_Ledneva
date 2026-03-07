@@ -1,7 +1,7 @@
 [
   {
     "name": "бессонница",
-    "links": ["pictures/bezson.webp"],
+    "links": ["pictures/bezson.webp", "pictures/st36.webp"],
     "point": [
       {
         "name": "VG4 Мин-мэнь",
@@ -117,7 +117,7 @@
   },
   {
     "name": "головокружение",
-    "links": ["pictures/golovokughenie.webp"],
+    "links": ["pictures/golovokughenie.webp", "pictures/st36.webp"],
     "point": [
       {
         "name": "V11 Да-чжу",
@@ -268,7 +268,7 @@
   },
   {
     "name": "беспокойство",
-    "links": ["pictures/bezpokoy.webp"],
+    "links": ["pictures/bezpokoy.webp", "pictures/st36.webp"],
     "point": [
       {
         "name": "VG4 Мин-мэнь",
@@ -354,7 +354,7 @@
   },
   {
     "name": "депрессия",
-    "links": ["pictures/depressia.webp"],
+    "links": ["pictures/depressia.webp", "pictures/st36.webp"],
     "point": [
       {
         "name": "VC15 Цзю-вэй",
@@ -413,10 +413,9 @@
       }
     ]
   },
-  
-   {
+  {
     "name": "общеукрепляющие",
-    "links": ["pictures/obsheukrep.webp"],
+    "links": ["pictures/obsheukrep.webp", "pictures/st36.webp"],
     "point": [
       {
         "name": "V11 Да-чжу",
@@ -475,10 +474,9 @@
       }
     ]
   },
-  
   {
   "name": "диабет панкреатит",
-  "links": ["pictures/diabet-pankreatit.webp"],
+  "links": ["pictures/diabet-pankreatit.webp", "pictures/st36.webp"],
   "point": [
     {
       "name": "V17 Гэ-шу",
@@ -805,7 +803,7 @@
 },
   {
   "name": "диабет - снижение зрения",
-  "links": ["pictures/diabet-glaza.webp"],
+  "links": ["pictures/diabet-glaza.webp", "pictures/st36.webp"],
   "point": [
     {
       "name": "VG7 Чжун-шу",
@@ -949,7 +947,7 @@
     }
   ]
 },
-{
+  {
   "name": "диабет - сосуды мозга",
   "links": ["pictures/diabet-mozg.webp"],
   "point": [
