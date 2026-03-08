@@ -146,9 +146,9 @@ p, .page-text, .small-text {
 
 .timer-display {
     font-size: 2rem;
-    font-weight: 500;
-    color: #FF0000; /* тёмно-зелёный */
-    text-shadow: 0 0 5px #D2181880;
+    font-weight: 700;
+    color: #2D5A2D; /* тёмно-зелёный */
+    text-shadow: 0 0 5px #2D5A2D85;
     line-height: 1;
     background: transparent;
 }
@@ -175,9 +175,9 @@ p, .page-text, .small-text {
 /* Мобильная адаптация */
 @media (max-width: 768px) {
     .timer-display {
-        font-size: 2rem;
+        font-size: 1.5rem;
     }
     .timer button i {
-        font-size: 2rem;
+        font-size: 1.5rem;
     }
 }

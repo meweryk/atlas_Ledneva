@@ -1200,7 +1200,7 @@
 },
   {
     "name": "Геморрой",
-    "links": ["/pictures/gemoroy.webp"],
+    "links": ["pictures/gemoroy.webp"],
     "point": [
       {
         "name": "VC1 Хуэй-инь",
