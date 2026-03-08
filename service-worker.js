@@ -1,9 +1,10 @@
-const CACHE_NAME = 'atlas-ledneva-v2.8';
-const STATIC_CACHE_NAME = 'atlas-static-v2.8';
-const IMAGES_CACHE_NAME = 'atlas-images-v2.8';
-const DATA_CACHE_NAME = 'atlas-data-v2.8';
+const CACHE_VERSION = 'v2.8';
+const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
+const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
+const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
 const FALLBACK_HTML = '/atlas_Ledneva/index.html';
 const FALLBACK_IMAGE = '/atlas_Ledneva/pictures/icon-192.png';
+
 // Статические ресурсы (относительные пути!)
 const STATIC_URLS = [
     '/atlas_Ledneva/',
@@ -11,6 +12,7 @@ const STATIC_URLS = [
     '/atlas_Ledneva/css/style.css',
     '/atlas_Ledneva/js/app.js',
     '/atlas_Ledneva/manifest.json',
+    "/atlas_Ledneva/point.json",
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
@@ -27,7 +29,7 @@ self.addEventListener('install', event => {
     );
 });
 
-// Активация – удаляем старые кэши (не совпадающие с текущими именами)
+// Активация – удаляем старые кэши
 self.addEventListener('activate', event => {
     const currentCaches = [STATIC_CACHE_NAME, IMAGES_CACHE_NAME, DATA_CACHE_NAME];
     event.waitUntil(
@@ -42,16 +44,16 @@ self.addEventListener('activate', event => {
                     })
                 );
             }),
-            self.clients.claim() // Немедленно захватываем контроль
+            self.clients.claim()
         ])
     );
 });
 
-// Стратегии кэширования для разных типов запросов
+// Стратегии кэширования
 self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     
-    // 1. Изображения из папки pictures – cache-first с обновлением
+    // 1. Изображения из папки pictures – cache-first
     if (url.pathname.includes('/pictures/')) {
         event.respondWith(
             caches.open(IMAGES_CACHE_NAME).then(cache =>
@@ -66,7 +68,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // 2. Данные point.json – network-first (всегда свежие)
+    // 2. Данные point.json – network-first
     if (url.pathname.endsWith('point.json')) {
         event.respondWith(
             fetch(event.request)
@@ -82,10 +84,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // 3. Все остальные запросы (статика) – cache-first, фоном обновляем
+    // 3. Остальные запросы – cache-first с фоновым обновлением
     event.respondWith(
         caches.match(event.request).then(response => {
-            // Пытаемся получить свежую версию из сети (не блокируя ответ)
             const fetchPromise = fetch(event.request)
                 .then(networkResponse => {
                     if (networkResponse && networkResponse.ok) {
@@ -96,11 +97,7 @@ self.addEventListener('fetch', event => {
                     }
                     return networkResponse;
                 })
-                .catch(error => {
-                    console.log('Ошибка сети, используется кэш:', error);
-                });
-            
-            // Возвращаем закэшированное, если есть, иначе ждём сеть
+                .catch(() => {});
             return response || fetchPromise;
         })
     );
