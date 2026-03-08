@@ -145,17 +145,17 @@ p, .page-text, .small-text {
 }
 
 .timer-display {
-    font-size: 1.2rem;
+    font-size: 2rem;
     font-weight: 500;
-    color: #1e4a1e; /* тёмно-зелёный */
-    text-shadow: 0 0 5px rgba(30, 74, 30, 0.5);
+    color: #FF0000; /* тёмно-зелёный */
+    text-shadow: 0 0 5px #D2181880;
     line-height: 1;
     background: transparent;
 }
 
 .timer button {
     background: transparent !important;
-    color: #2d5a2d !important;
+    color: #2D5A2D !important;
     transition: color 0.2s;
     border: none !important;
     outline: none !important;
@@ -168,16 +168,16 @@ p, .page-text, .small-text {
 }
 
 .timer button i {
-    font-size: 1.2rem;
+    font-size: 2rem;
     vertical-align: middle;
 }
 
 /* Мобильная адаптация */
 @media (max-width: 768px) {
     .timer-display {
-        font-size: 1rem;
+        font-size: 2rem;
     }
     .timer button i {
-        font-size: 1rem;
+        font-size: 2rem;
     }
 }
