@@ -602,3 +602,80 @@ document.getElementById('clearCommonPointsBtn')?.addEventListener('click', () =>
     const resultDiv = document.getElementById('commonPointsResult');
     if (resultDiv) resultDiv.innerHTML = '';
 });
+
+// --- Секундомер с отладкой ---
+console.log('Инициализация секундомера...');
+
+const timerDisplay = document.getElementById('timerDisplay');
+const timerStartPauseBtn = document.getElementById('timerStartPause');
+const timerResetBtn = document.getElementById('timerReset');
+
+console.log('timerDisplay:', timerDisplay);
+console.log('timerStartPauseBtn:', timerStartPauseBtn);
+console.log('timerResetBtn:', timerResetBtn);
+
+let timerInterval = null;
+let timerSeconds = 0;
+let timerRunning = false;
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(timerSeconds / 60);
+    const seconds = timerSeconds % 60;
+    timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    console.log('Обновление дисплея:', timerDisplay.textContent);
+}
+
+function toggleTimer() {
+    console.log('toggleTimer вызван, текущее состояние running:', timerRunning);
+    if (timerRunning) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerRunning = false;
+        timerStartPauseBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
+        console.log('Таймер остановлен');
+    } else {
+        timerRunning = true;
+        timerStartPauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill"></i>';
+        timerInterval = setInterval(() => {
+            timerSeconds++;
+            updateTimerDisplay();
+        }, 1000);
+        console.log('Таймер запущен');
+    }
+}
+
+function resetTimer() {
+    console.log('resetTimer вызван');
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    timerRunning = false;
+    timerSeconds = 0;
+    updateTimerDisplay();
+    timerStartPauseBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
+    console.log('Таймер сброшен');
+}
+
+if (timerStartPauseBtn) {
+    timerStartPauseBtn.addEventListener('click', (e) => {
+        console.log('Клик по кнопке старт/пауза');
+        toggleTimer();
+    });
+    console.log('Обработчик старт/пауза добавлен');
+} else {
+    console.error('Кнопка старт/пауза не найдена!');
+}
+
+if (timerResetBtn) {
+    timerResetBtn.addEventListener('click', (e) => {
+        console.log('Клик по кнопке сброса');
+        resetTimer();
+    });
+    console.log('Обработчик сброса добавлен');
+} else {
+    console.error('Кнопка сброса не найдена!');
+}
+
+updateTimerDisplay();
+console.log('Инициализация завершена');
