@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2.9';
+const CACHE_VERSION = 'v3'; // не забудьте увеличить версию!
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -68,10 +68,10 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // 2. Данные point.json – network-first
+    // 2. Данные point.json – network-first с игнорированием HTTP-кеша
     if (url.pathname.endsWith('point.json')) {
         event.respondWith(
-            fetch(event.request)
+            fetch(event.request, { cache: 'no-cache' }) // ← вот это добавлено
             .then(response => {
                 const responseClone = response.clone();
                 caches.open(DATA_CACHE_NAME).then(cache => {
