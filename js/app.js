@@ -59,6 +59,7 @@ async function loadData() {
                 if (basePoint) {
                     // КЛЮЧЕВОЕ УСЛОВИЕ: если в локальной версии описание пустое,
                     // а в JSON оно появилось — берем из JSON.
+                    console.log (lp.description)
                     if ((!lp.description || lp.description.trim() === "") && basePoint.description) {
                         lp.description = basePoint.description;
                     }
