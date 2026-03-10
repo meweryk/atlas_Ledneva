@@ -18,34 +18,43 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadData() {
-    // Сначала пробуем загрузить из localStorage
+    let localData = [];
+    let jsonData = [];
+
+    // 1. Загружаем из localStorage
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         try {
-            pathologiesData = JSON.parse(saved);
-            pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-            renderAccordion();
-            fillPathologyDatalist();
-            showPage('main');
-            return;
+            localData = JSON.parse(saved);
         } catch (e) {
-            console.error('Ошибка парсинга сохранённых данных', e);
+            console.error('Ошибка парсинга localStorage', e);
         }
     }
 
-    // Если нет в localStorage, грузим из point.json
+    // 2. Всегда загружаем point.json (через Service Worker с network-first)
     try {
         const response = await fetch('point.json');
-        pathologiesData = await response.json();
-        pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-        // Сохраняем в localStorage при первой загрузке
-        saveToLocalStorage();
-        renderAccordion();
-        fillPathologyDatalist();
-        showPage('main');
+        jsonData = await response.json();
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
     }
+
+    // 3. Объединяем данные
+    // Используем Map для быстрой проверки уникальности по имени патологии
+    const mergedMap = new Map();
+
+    // Сначала берем данные из JSON как базовые
+    jsonData.forEach(p => mergedMap.set(p.name, p));
+
+    // Накладываем локальные данные (они перезапишут JSON-объекты с теми же именами)
+    localData.forEach(p => mergedMap.set(p.name, p));
+
+    pathologiesData = Array.from(mergedMap.values());
+    pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Обновляем интерфейс
+    afterDataChange(); 
+    showPage('main');
 }
 
 // Сохранение в localStorage
