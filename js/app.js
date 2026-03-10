@@ -21,53 +21,56 @@ async function loadData() {
     let localData = [];
     let jsonData = [];
 
-    // 1. Загружаем из localStorage
+    // 1. Пытаемся взять локальные данные
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         try {
             localData = JSON.parse(saved);
         } catch (e) {
-            console.error('Ошибка парсинга localStorage', e);
+            console.error('Ошибка парсинга сохранённых данных', e);
         }
     }
 
-    // 2. Загружаем свежий point.json (Service Worker обеспечит кеш, если нет сети)
+    // 2. ВСЕГДА загружаем point.json, чтобы проверить наличие новых описаний
     try {
         const response = await fetch('point.json');
         jsonData = await response.json();
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
+        // Если файла нет и локальных данных тоже нет — выходим
+        if (localData.length === 0) return;
     }
 
-    // 3. Умное объединение
-    // Создаем карту на основе JSON (базовые данные)
+    // 3. Слияние: берем за основу jsonData и дополняем/заменяем локальными правками
     const mergedMap = new Map();
+
+    // Заполняем карту данными из JSON
     jsonData.forEach(p => mergedMap.set(p.name, p));
 
-    // Проходим по локальным данным и дополняем их или обновляем базу
+    // Накладываем локальные данные
     localData.forEach(localPathology => {
         if (mergedMap.has(localPathology.name)) {
-            const basePathology = mergedMap.get(localPathology.name);
+            const baseP = mergedMap.get(localPathology.name);
 
-            // Сливаем точки внутри патологии
-            localPathology.point.forEach(localPoint => {
-                const basePoint = basePathology.point.find(bp => bp.name === localPoint.name);
+            // Проверяем каждую точку внутри патологии
+            localPathology.point.forEach(lp => {
+                const basePoint = baseP.point.find(bp => bp.name === lp.name);
                 
                 if (basePoint) {
-                    // Если в локальной записи нет описания, берем из базы
-                    if (!localPoint.description || localPoint.description.trim() === "") {
-                        localPoint.description = basePoint.description;
+                    // КЛЮЧЕВОЕ УСЛОВИЕ: если в локальной версии описание пустое,
+                    // а в JSON оно появилось — берем из JSON.
+                    if ((!lp.description || lp.description.trim() === "") && basePoint.description) {
+                        lp.description = basePoint.description;
                     }
-                    // Если в локальной записи нет фото, берем из базы
-                    if (!localPoint.images || localPoint.images.length === 0) {
-                        localPoint.images = basePoint.images;
+                    // То же самое для картинок
+                    if ((!lp.images || lp.images.length === 0) && basePoint.images) {
+                        lp.images = basePoint.images;
                     }
                 }
             });
-            // Обновляем запись в карте локальной версией (уже дополненной)
             mergedMap.set(localPathology.name, localPathology);
         } else {
-            // Если этой патологии вообще нет в JSON, просто добавляем её из локальных
+            // Если в JSON такой патологии нет, добавляем локальную целиком
             mergedMap.set(localPathology.name, localPathology);
         }
     });
@@ -75,12 +78,11 @@ async function loadData() {
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
 
-    // 4. Отрисовка и сохранение дополненного результата
-    renderAccordion();
-    fillPathologyDatalist();
-    saveToLocalStorage(); 
+    // 4. Обновляем и сохраняем результат
+    afterDataChange(); 
     showPage('main');
 }
+
 
 
 // Сохранение в localStorage
