@@ -20,9 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadData() {
     let localData = [];
     let jsonData = [];
-    let updatedDescriptionsCount = 0; // Счетчик для отладки
+    let updatedDescriptionsCount = 0;
 
-    // 1. Загружаем локальные данные
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         try {
@@ -32,40 +31,50 @@ async function loadData() {
         }
     }
 
-    // 2. Всегда загружаем point.json (без return!), чтобы иметь базу для сравнения
     try {
         const response = await fetch('point.json');
         jsonData = await response.json();
-        console.log('Данные из point.json успешно загружены');
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
     }
 
-    // 3. Умное слияние
+    // Функция для очистки имени от альтернативных названий (после /)
+    const normalizeName = (name) => name.split('/')[0].trim().toLowerCase();
+
     const mergedMap = new Map();
-    // Наполняем карту базовыми данными из JSON
+    // 1. Сначала берем JSON как основу
     jsonData.forEach(p => mergedMap.set(p.name, p));
 
-    // Накладываем локальные правки
+    // 2. Сливаем с локальными данными
     localData.forEach(localPathology => {
         if (mergedMap.has(localPathology.name)) {
             const baseP = mergedMap.get(localPathology.name);
 
             localPathology.point.forEach(lp => {
-                const basePoint = baseP.point.find(bp => bp.name === lp.name);
+                const normLocalName = normalizeName(lp.name);
+                
+                // Ищем точку в JSON, сравнивая нормализованные имена
+                const basePoint = baseP.point.find(bp => normalizeName(bp.name) === normLocalName);
                 
                 if (basePoint) {
                     const localDesc = (lp.description || "").trim();
                     const baseDesc = (basePoint.description || "").trim();
 
-                    // ПРОВЕРКА: если локальное описание < 10 символов, а в JSON оно длинное
+                    // Если в локальной базе описание короткое — берем из JSON
                     if (localDesc.length < 10 && baseDesc.length >= 10) {
-                        console.log(`Обновлено описание для точки: ${lp.name} (Патология: ${localPathology.name})`);
+                        console.log(`Обновлено описание для: ${lp.name} (совпало с ${basePoint.name})`);
                         lp.description = baseDesc;
                         updatedDescriptionsCount++;
                     }
 
-                    // Если локально нет фото, берем из JSON
+                    // Если в локальной базе точка называется короче (без /), 
+                    // обновляем её имя до полного из JSON
+                    if (lp.name !== basePoint.name && basePoint.name.includes('/')) {
+                        console.log(`Обновлено имя точки: ${lp.name} -> ${basePoint.name}`);
+                        lp.name = basePoint.name;
+                    }
+
+                    // Подтягиваем фото, если их нет
                     if ((!lp.images || lp.images.length === 0) && basePoint.images) {
                         lp.images = basePoint.images;
                     }
@@ -73,20 +82,19 @@ async function loadData() {
             });
             mergedMap.set(localPathology.name, localPathology);
         } else {
-            // Патология создана пользователем, которой нет в JSON
             mergedMap.set(localPathology.name, localPathology);
         }
     });
 
-    console.log(`Всего обновлено описаний из JSON: ${updatedDescriptionsCount}`);
+    console.log(`Итог: обновлено ${updatedDescriptionsCount} описаний.`);
 
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
 
-    // 4. Сохраняем результат слияния и обновляем экран
-    afterDataChange(); // Эта функция вызывает saveToLocalStorage
+    afterDataChange(); // Сохранит исправленное в LocalStorage
     showPage('main');
 }
+
 
 
 // Сохранение в localStorage
