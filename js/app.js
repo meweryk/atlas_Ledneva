@@ -31,7 +31,7 @@ async function loadData() {
         }
     }
 
-    // 2. Всегда загружаем point.json (через Service Worker с network-first)
+    // 2. Загружаем свежий point.json (Service Worker обеспечит кеш, если нет сети)
     try {
         const response = await fetch('point.json');
         jsonData = await response.json();
@@ -39,23 +39,49 @@ async function loadData() {
         console.error('Ошибка загрузки point.json', error);
     }
 
-    // 3. Объединяем данные
-    // Используем Map для быстрой проверки уникальности по имени патологии
+    // 3. Умное объединение
+    // Создаем карту на основе JSON (базовые данные)
     const mergedMap = new Map();
-
-    // Сначала берем данные из JSON как базовые
     jsonData.forEach(p => mergedMap.set(p.name, p));
 
-    // Накладываем локальные данные (они перезапишут JSON-объекты с теми же именами)
-    localData.forEach(p => mergedMap.set(p.name, p));
+    // Проходим по локальным данным и дополняем их или обновляем базу
+    localData.forEach(localPathology => {
+        if (mergedMap.has(localPathology.name)) {
+            const basePathology = mergedMap.get(localPathology.name);
+
+            // Сливаем точки внутри патологии
+            localPathology.point.forEach(localPoint => {
+                const basePoint = basePathology.point.find(bp => bp.name === localPoint.name);
+                
+                if (basePoint) {
+                    // Если в локальной записи нет описания, берем из базы
+                    if (!localPoint.description || localPoint.description.trim() === "") {
+                        localPoint.description = basePoint.description;
+                    }
+                    // Если в локальной записи нет фото, берем из базы
+                    if (!localPoint.images || localPoint.images.length === 0) {
+                        localPoint.images = basePoint.images;
+                    }
+                }
+            });
+            // Обновляем запись в карте локальной версией (уже дополненной)
+            mergedMap.set(localPathology.name, localPathology);
+        } else {
+            // Если этой патологии вообще нет в JSON, просто добавляем её из локальных
+            mergedMap.set(localPathology.name, localPathology);
+        }
+    });
 
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Обновляем интерфейс
-    afterDataChange(); 
+    // 4. Отрисовка и сохранение дополненного результата
+    renderAccordion();
+    fillPathologyDatalist();
+    saveToLocalStorage(); 
     showPage('main');
 }
+
 
 // Сохранение в localStorage
 function saveToLocalStorage() {
