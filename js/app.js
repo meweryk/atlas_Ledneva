@@ -728,3 +728,138 @@ if (timerResetBtn) {
 
 updateTimerDisplay();
 console.log('Инициализация завершена');
+
+// ==================== История (History Manager) ====================
+const HISTORY_STORAGE_KEY = 'atlas_history';
+
+// Структура по умолчанию
+const defaultHistory = {
+    users: [], // [{ id: string, name: string, isActive: boolean }]
+    records: [] // [{ id: string, userId: string, pointName: string, pathologyName: string, shortArea: string, timestamp: number }]
+};
+
+// Загрузка истории из localStorage
+function loadHistory() {
+    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (stored) {
+        try {
+            return JSON.parse(stored);
+        } catch (e) {
+            console.error('Ошибка парсинга истории', e);
+            return defaultHistory;
+        }
+    }
+    return defaultHistory;
+}
+
+// Сохранение истории
+function saveHistory(history) {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+}
+
+// Получить активного пользователя (или null)
+function getActiveUser() {
+    const history = loadHistory();
+    const active = history.users.find(u => u.isActive === true);
+    return active || null;
+}
+
+// Установить активного пользователя по ID
+function setActiveUser(userId) {
+    const history = loadHistory();
+    let changed = false;
+    history.users.forEach(u => {
+        if (u.id === userId) {
+            if (!u.isActive) {
+                u.isActive = true;
+                changed = true;
+            }
+        } else {
+            if (u.isActive) {
+                u.isActive = false;
+                changed = true;
+            }
+        }
+    });
+    if (changed) {
+        saveHistory(history);
+    }
+    return changed;
+}
+
+// Добавить нового пользователя (если пользователей нет, он становится активным)
+function addUser(name) {
+    if (!name || name.trim() === '') return null;
+    const history = loadHistory();
+    const newUser = {
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        name: name.trim(),
+        isActive: history.users.length === 0 // первый пользователь активен
+    };
+    history.users.push(newUser);
+    saveHistory(history);
+    return newUser;
+}
+
+// Удалить пользователя и все его записи
+function deleteUser(userId) {
+    const history = loadHistory();
+    // Удаляем записи пользователя
+    history.records = history.records.filter(r => r.userId !== userId);
+    // Удаляем пользователя
+    const index = history.users.findIndex(u => u.id === userId);
+    if (index !== -1) {
+        const wasActive = history.users[index].isActive;
+        history.users.splice(index, 1);
+        // Если был активным и есть другие пользователи, делаем первого активным
+        if (wasActive && history.users.length > 0) {
+            history.users[0].isActive = true;
+        }
+        saveHistory(history);
+        return true;
+    }
+    return false;
+}
+
+// Добавить запись для активного пользователя
+function addRecord(pointData) {
+    const { pointName, pathologyName, dispersion } = pointData;
+    if (!pointName || !pathologyName) return null;
+    
+    const activeUser = getActiveUser();
+    if (!activeUser) return null; // нет активного пользователя
+    
+    // Извлекаем краткое расположение (до двоеточия)
+    let shortArea = 'другое';
+    if (dispersion && dispersion.includes(':')) {
+        shortArea = dispersion.split(':')[0].trim();
+    }
+    
+    const newRecord = {
+        id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        userId: activeUser.id,
+        pointName: pointName,
+        pathologyName: pathologyName,
+        shortArea: shortArea,
+        timestamp: Date.now()
+    };
+    
+    const history = loadHistory();
+    history.records.push(newRecord);
+    saveHistory(history);
+    return newRecord;
+}
+
+// Получить записи для конкретного пользователя (отсортированы по убыванию времени)
+function getRecordsByUser(userId) {
+    const history = loadHistory();
+    return history.records
+        .filter(r => r.userId === userId)
+        .sort((a, b) => b.timestamp - a.timestamp);
+}
+
+// Получить всех пользователей
+function getAllUsers() {
+    const history = loadHistory();
+    return history.users;
+}
