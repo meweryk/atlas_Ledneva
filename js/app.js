@@ -109,23 +109,51 @@ function afterDataChange() {
     saveToLocalStorage();
 }
 
-// Навигация
+// ==============Навигация=============
+// Обновляем функцию showPage для поддержки historyPage
+function showPage(page) {
+    const mainPage = document.getElementById('mainPage');
+    const searchPage = document.getElementById('searchPage');
+    const historyPage = document.getElementById('historyPage');
+    if (!mainPage || !searchPage || !historyPage) return;
+    
+    mainPage.style.display = 'none';
+    searchPage.style.display = 'none';
+    historyPage.style.display = 'none';
+    
+    if (page === 'main') {
+        updateMainPageGreeting();
+        mainPage.style.display = 'block';
+        currentPage = 'main';
+    } else if (page === 'search') {
+        searchPage.style.display = 'block';
+        currentPage = 'search';
+        renderPathologyCheckboxes();
+    } else if (page === 'history') {
+        historyPage.style.display = 'block';
+        currentPage = 'history';
+        renderHistoryPage();
+    }
+}
+
+// Обновляем initNavigation для добавления обработчика истории
 function initNavigation() {
     const navLinks = {
         home: document.getElementById('nav-home'),
-        pathologies: document.getElementById('nav-pathologies'),
+        pathologies: document.getElementById('nav-pathologies'), // оставляем, но переименовали в истории? Лучше заменить
         points: document.getElementById('nav-points'),
         search: document.getElementById('nav-search'),
-        about: document.getElementById('nav-about')
+        about: document.getElementById('nav-about'),
+        history: document.getElementById('nav-history') // новый пункт
     };
-
+    
     const collapseNavbar = () => {
         if (navbarCollapse && navbarCollapse.classList.contains('show')) {
             const bsCollapse = new bootstrap.Collapse(navbarCollapse, { toggle: false });
             bsCollapse.hide();
         }
     };
-
+    
     if (navLinks.home) {
         navLinks.home.addEventListener('click', (e) => {
             e.preventDefault();
@@ -142,6 +170,15 @@ function initNavigation() {
             collapseNavbar();
         });
     }
+    if (navLinks.history) {
+        navLinks.history.addEventListener('click', (e) => {
+            e.preventDefault();
+            setActiveNav('history');
+            showPage('history');
+            collapseNavbar();
+        });
+    }
+    // Остальные можно оставить как есть (или убрать)
     if (navLinks.pathologies) {
         navLinks.pathologies.addEventListener('click', (e) => {
             e.preventDefault();
@@ -168,8 +205,9 @@ function initNavigation() {
     }
 }
 
+// Обновляем setActiveNav, чтобы включить 'history'
 function setActiveNav(activeId) {
-    const navLinks = ['home', 'pathologies', 'points', 'search', 'about'];
+    const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history'];
     navLinks.forEach(id => {
         const el = document.getElementById(`nav-${id}`);
         if (el) {
@@ -182,21 +220,6 @@ function setActiveNav(activeId) {
     });
 }
 
-function showPage(page) {
-    const mainPage = document.getElementById('mainPage');
-    const searchPage = document.getElementById('searchPage');
-    if (!mainPage || !searchPage) return;
-    if (page === 'main') {
-        mainPage.style.display = 'block';
-        searchPage.style.display = 'none';
-        currentPage = 'main';
-    } else if (page === 'search') {
-        mainPage.style.display = 'none';
-        searchPage.style.display = 'block';
-        currentPage = 'search';
-        renderPathologyCheckboxes();
-    }
-}
 
 // Работа с формами
 function fillPathologyDatalist() {
@@ -341,7 +364,95 @@ function showPointCard(pathology, point) {
             }, { passive: true });
         }
     }
-
+    
+    // ===== Галочка для добавления в историю =====
+    const oldCheck = document.getElementById('pointCheckButton');
+    if (oldCheck) oldCheck.remove();
+    
+    // Галочка отображается только если есть изображения
+    if (carouselContainer.style.display !== 'none') {
+        // Создаём кнопку-галочку
+        const checkBtn = document.createElement('div');
+        checkBtn.id = 'pointCheckButton';
+        checkBtn.style.cssText = `
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10;
+            cursor: pointer;
+            font-size: 2.5rem;
+            line-height: 1;
+            color: rgba(40, 167, 69, 0.3);
+            transition: color 0.2s;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
+        checkBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+        
+        // Определяем начальный цвет в зависимости от того, добавлена ли точка активным пользователем
+        const activeUser = getActiveUser();
+        const oneHour = 60 * 60 * 1000; // 1 час
+        let isFresh = false;
+        if (activeUser) {
+            const lastTime = getLastRecordTime(point.name, activeUser.id);
+            const now = Date.now();
+            isFresh = lastTime && (now - lastTime) < oneHour;
+        }
+        checkBtn.style.color = isFresh ? 'rgba(40, 167, 69, 1)' : 'rgba(40, 167, 69, 0.3)';
+        
+        // Обработчик клика
+        checkBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            let currentActive = getActiveUser();
+            
+            // Если нет активного пользователя, предлагаем создать
+            if (!currentActive) {
+                const name = prompt('Введите ваше имя для добавления в историю:');
+                if (!name || name.trim() === '') return;
+                const newUser = addUser(name.trim());
+                if (newUser) {
+                    currentActive = newUser;
+                    alert(`Здравствуй, ${newUser.name}! Теперь ты активный пользователь.`);
+                } else {
+                    return;
+                }
+            }
+            
+            // Проверяем, не добавлялась ли точка менее часа назад
+            const last = getLastRecordTime(point.name, currentActive.id);
+            const now = Date.now();
+            if (last && (now - last) < oneHour) {
+                alert('Эта точка уже была добавлена в течение последнего часа. Попробуйте позже.');
+                return;
+            }
+            
+            // Добавляем запись
+            const newRecord = addRecord({
+                pointName: point.name,
+                pathologyName: pathology.name,
+                dispersion: point.dispersion
+            });
+            
+            if (newRecord) {
+                checkBtn.style.color = 'rgba(40, 167, 69, 1)';
+                alert('Точка добавлена в историю');
+            }
+        });
+        
+        // Помещаем кнопку в контейнер карусели
+        const pointCarousel = document.getElementById('pointCarousel');
+        if (pointCarousel) {
+            pointCarousel.style.position = 'relative';
+            pointCarousel.appendChild(checkBtn);
+        }
+    }
     viewPointModal.show();
 }
 
@@ -738,6 +849,16 @@ const defaultHistory = {
     records: [] // [{ id: string, userId: string, pointName: string, pathologyName: string, shortArea: string, timestamp: number }]
 };
 
+// Возвращает timestamp последней записи точки для данного пользователя или null
+function getLastRecordTime(pointName, userId) {
+    const history = loadHistory();
+    const userRecords = history.records.filter(r => r.userId === userId && r.pointName === pointName);
+    if (userRecords.length === 0) return null;
+    // Сортируем по убыванию времени и берём самую свежую
+    userRecords.sort((a, b) => b.timestamp - a.timestamp);
+    return userRecords[0].timestamp;
+}
+
 // Загрузка истории из localStorage
 function loadHistory() {
     const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
@@ -791,10 +912,12 @@ function setActiveUser(userId) {
 function addUser(name) {
     if (!name || name.trim() === '') return null;
     const history = loadHistory();
+    // Снимаем активность со всех текущих пользователей
+    history.users.forEach(u => u.isActive = false);
     const newUser = {
         id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         name: name.trim(),
-        isActive: history.users.length === 0 // первый пользователь активен
+        isActive: true // новый пользователь становится активным
     };
     history.users.push(newUser);
     saveHistory(history);
@@ -863,3 +986,238 @@ function getAllUsers() {
     const history = loadHistory();
     return history.users;
 }
+
+// ==================== Страница истории ====================
+function renderHistoryPage() {
+    const users = getAllUsers().sort((a, b) => a.name.localeCompare(b.name)); // сортировка по алфавиту
+    const accordion = document.getElementById('usersAccordion');
+    const recordsContainer = document.getElementById('userRecordsContainer');
+    const selectedUserNameEl = document.getElementById('selectedUserName');
+    const recordsListEl = document.getElementById('recordsList');
+    
+    if (!accordion || !recordsContainer || !selectedUserNameEl || !recordsListEl) return;
+    
+    accordion.innerHTML = '';
+    
+    if (users.length === 0) {
+        accordion.innerHTML = '<p class="text-muted">Нет пользователей. Добавьте имя.</p>';
+        recordsContainer.style.display = 'none';
+        return;
+    }
+    
+    // Строим аккордеон только с заголовками (без тел)
+    users.forEach((user, index) => {
+        const itemId = `user-item-${index}`;
+        const isActiveClass = user.isActive ? 'active-user' : '';
+        
+        const accordionItem = document.createElement('div');
+        accordionItem.className = 'accordion-item';
+        accordionItem.innerHTML = `
+            <h2 class="accordion-header" id="heading-user-${index}">
+                <button class="accordion-button collapsed ${isActiveClass}" type="button" data-bs-toggle="collapse" data-bs-target="#${itemId}" aria-expanded="false" aria-controls="${itemId}" data-user-id="${user.id}">
+                    <span class="me-2">${user.name}</span>
+                    ${user.isActive ? '<span class="badge bg-success">Активен</span>' : ''}
+                    <i class="bi bi-trash ms-auto delete-user" data-user-id="${user.id}" style="cursor:pointer; color:#dc3545;" onclick="event.stopPropagation()"></i>
+                </button>
+            </h2>
+            <div id="${itemId}" class="accordion-collapse collapse" aria-labelledby="heading-user-${index}" data-bs-parent="#usersAccordion">
+                <div class="accordion-body p-2">
+                    <!-- тело пустое -->
+                </div>
+            </div>
+        `;
+        accordion.appendChild(accordionItem);
+    });
+    
+    // Обработчик клика по заголовку (кнопке) – делает пользователя активным, обнуляет таймер, показывает записи
+    document.querySelectorAll('#usersAccordion .accordion-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            // Игнорируем, если клик по иконке удаления (уже обработано)
+            if (e.target.closest('.delete-user')) return;
+            
+            const userId = btn.dataset.userId;
+            if (!userId) return;
+            
+            // Устанавливаем активного пользователя
+            setActiveUser(userId);
+            updateMainPageGreeting();
+            
+            // Обновляем отображение активного
+            updateActiveUserDisplay();
+            
+            // Показываем записи этого пользователя
+            showUserRecords(userId);
+            
+            // Сворачиваем все открытые панели аккордеона
+            const openCollapse = document.querySelector('#usersAccordion .accordion-collapse.show');
+            if (openCollapse) {
+                const collapse = bootstrap.Collapse.getInstance(openCollapse);
+                if (collapse) collapse.hide();
+            }
+        });
+    });
+    
+    // Обработчики удаления пользователя (иконка)
+    document.querySelectorAll('.delete-user').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const userId = btn.dataset.userId;
+            if (confirm('Удалить пользователя и все его записи?')) {
+                deleteUser(userId);
+                renderHistoryPage(); // перерендерить всю страницу
+            }
+        });
+    });
+    
+    // Показываем записи активного пользователя (если есть)
+    const activeUser = getActiveUser();
+    if (activeUser) {
+        showUserRecords(activeUser.id);
+        recordsContainer.style.display = 'block';
+        selectedUserNameEl.textContent = `Записи пользователя: ${activeUser.name}`;
+    } else {
+        recordsContainer.style.display = 'none';
+    }
+    
+    updateActiveUserDisplay();
+}
+
+function showUserRecords(userId) {
+     // Обновляем заголовок с именем пользователя
+     const selectedUserNameEl = document.getElementById('selectedUserName');
+     if (selectedUserNameEl) {
+         const user = getAllUsers().find(u => u.id === userId);
+         selectedUserNameEl.textContent = user ? `Записи пользователя: ${user.name}` : '';
+     }
+    
+    const recordsListEl = document.getElementById('recordsList');
+    if (!recordsListEl) return;
+    
+    const records = getRecordsByUser(userId); // уже отсортированы по убыванию timestamp
+    if (records.length === 0) {
+        recordsListEl.innerHTML = '<p class="text-muted">Нет записей</p>';
+        return;
+    }
+    
+    // Группируем по дате (строка YYYY-MM-DD)
+    const groupedByDate = {};
+    records.forEach(rec => {
+        const date = new Date(rec.timestamp);
+        const dateStr = date.toLocaleDateString('ru-RU'); // "11.03.2026"
+        if (!groupedByDate[dateStr]) {
+            groupedByDate[dateStr] = [];
+        }
+        groupedByDate[dateStr].push(rec);
+    });
+    
+    // Преобразуем в массив и сортируем даты по убыванию (новые сверху)
+    const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+        // Преобразуем строки "dd.mm.yyyy" в объекты Date для сравнения
+        const [d1, m1, y1] = a.split('.').map(Number);
+        const [d2, m2, y2] = b.split('.').map(Number);
+        const dateA = new Date(y1, m1 - 1, d1);
+        const dateB = new Date(y2, m2 - 1, d2);
+        return dateB - dateA; // новые сверху
+    });
+    
+    let html = '';
+    sortedDates.forEach(dateStr => {
+        const dayRecords = groupedByDate[dateStr];
+        // Группируем по патологии
+        const byPathology = {};
+        dayRecords.forEach(rec => {
+            if (!byPathology[rec.pathologyName]) {
+                byPathology[rec.pathologyName] = [];
+            }
+            byPathology[rec.pathologyName].push(rec);
+        });
+        
+        // Сортируем патологии по алфавиту
+        const sortedPathologies = Object.keys(byPathology).sort((a, b) => a.localeCompare(b));
+        
+        // Формируем блок даты
+        html += `<div class="mt-3 mb-2"><strong>${dateStr}</strong></div>`;
+        
+        sortedPathologies.forEach(pathology => {
+            const pathRecords = byPathology[pathology];
+            // Сортируем записи внутри патологии по времени (возрастание)
+            pathRecords.sort((a, b) => a.timestamp - b.timestamp);
+            
+            html += `<div class="ms-3 mb-2"><em>${pathology}</em></div>`;
+            html += `<div class="ms-4">`;
+            pathRecords.forEach(rec => {
+                const time = new Date(rec.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+                html += `<div class="mb-1">
+                    <span class="point-history-link" data-point-name="${rec.pointName}" data-pathology="${rec.pathologyName}" style="cursor:pointer; color:#0d6efd; text-decoration:underline;">${rec.pointName}</span>
+                    <span class="text-muted"> (${time})</span>
+                </div>`;
+            });
+            html += `</div>`;
+        });
+    });
+    
+    recordsListEl.innerHTML = html;
+    
+    // Добавляем обработчики на ссылки точек
+    document.querySelectorAll('.point-history-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const pointName = link.dataset.pointName;
+            const pathologyName = link.dataset.pathology;
+            const pathology = pathologiesData.find(p => p.name === pathologyName);
+            const point = pathology?.point.find(p => p.name === pointName);
+            if (point) showPointCard(pathology, point);
+        });
+    });
+}
+
+function updateMainPageGreeting() {
+    const titleEl = document.getElementById('mainPageTitle');
+    if (!titleEl) return;
+    const activeUser = getActiveUser();
+    if (activeUser) {
+        titleEl.textContent = `Добро пожаловать в Атлас, ${activeUser.name}`;
+    } else {
+        titleEl.textContent = 'Добро пожаловать в Атлас';
+    }
+}
+
+function updateActiveUserDisplay() {
+    const activeUser = getActiveUser();
+    document.querySelectorAll('#usersAccordion .accordion-button').forEach(btn => {
+        const userId = btn.dataset.userId;
+        if (userId === activeUser?.id) {
+            btn.classList.add('active-user');
+            // Добавляем бейдж, если его нет
+            if (!btn.querySelector('.badge.bg-success')) {
+                const nameSpan = btn.querySelector('span:first-child');
+                if (nameSpan) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-success ms-2';
+                    badge.textContent = 'Активен';
+                    nameSpan.insertAdjacentElement('afterend', badge);
+                }
+            }
+        } else {
+            btn.classList.remove('active-user');
+            const badge = btn.querySelector('.badge.bg-success');
+            if (badge) badge.remove();
+        }
+    });
+}
+
+// Обработчик кнопки "Добавить имя"
+document.getElementById('addUserNameBtn')?.addEventListener('click', () => {
+    const name = prompt('Введите имя пользователя:');
+    if (name && name.trim() !== '') {
+        const newUser = addUser(name.trim());
+        if (newUser) {
+            renderHistoryPage(); // перерисовываем страницу истории
+            updateMainPageGreeting(); // обновляем приветствие на главной
+            // Показываем записи нового пользователя и обновляем заголовок
+            showUserRecords(newUser.id);
+            document.getElementById('selectedUserName').textContent = `Записи пользователя: ${newUser.name}`;
+            alert(`Здравствуй, ${newUser.name}! Все последующие записи в истории принадлежат тебе.`);
+        }
+    }
+});

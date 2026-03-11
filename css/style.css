@@ -181,3 +181,26 @@ p, .page-text, .small-text {
         font-size: 1.5rem;
     }
 }
+
+.accordion-button.active-user {
+    background-color: #d4e0c0;
+    font-weight: bold;
+}
+.point-history-link {
+    cursor: pointer;
+    color: #0d6efd;
+    text-decoration: underline;
+}
+.point-history-link:hover {
+    color: #0a58ca;
+}
+
+#pointCarousel {
+    position: relative;
+}
+#pointCheckButton {
+    user-select: none;
+}
+#pointCheckButton:hover {
+    color: rgba(40, 167, 69, 0.8) !important;
+}
