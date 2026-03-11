@@ -17,6 +17,7 @@ body {
 
 .navbar, .footer {
     background-color: var(--sage-light) !important;
+    z-index: 1060;
 }
 
 .navbar-brand {
@@ -147,7 +148,7 @@ p, .page-text, .small-text {
 .timer-display {
     font-size: 2rem;
     font-weight: 700;
-    color: #2D5A2D; /* тёмно-зелёный */
+    color: #f03c3c; /* тёмно-зелёный */
     text-shadow: 0 0 5px #2D5A2D85;
     line-height: 1;
     background: transparent;
