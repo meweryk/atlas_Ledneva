@@ -950,9 +950,8 @@ function addRecord(pointData) {
     if (!pointName || !pathologyName) return null;
     
     const activeUser = getActiveUser();
-    if (!activeUser) return null; // нет активного пользователя
+    if (!activeUser) return null;
     
-    // Извлекаем краткое расположение (до двоеточия)
     let shortArea = 'другое';
     if (dispersion && dispersion.includes(':')) {
         shortArea = dispersion.split(':')[0].trim();
@@ -964,7 +963,12 @@ function addRecord(pointData) {
         pointName: pointName,
         pathologyName: pathologyName,
         shortArea: shortArea,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        measurements: {
+            elediya: null,
+            fol: null,
+            saved: false
+        }
     };
     
     const history = loadHistory();
@@ -1083,82 +1087,179 @@ function renderHistoryPage() {
 }
 
 function showUserRecords(userId) {
-     // Обновляем заголовок с именем пользователя
-     const selectedUserNameEl = document.getElementById('selectedUserName');
-     if (selectedUserNameEl) {
-         const user = getAllUsers().find(u => u.id === userId);
-         selectedUserNameEl.textContent = user ? `Записи пользователя: ${user.name}` : '';
-     }
-    
+    const selectedUserNameEl = document.getElementById('selectedUserName');
     const recordsListEl = document.getElementById('recordsList');
-    if (!recordsListEl) return;
+    if (!selectedUserNameEl || !recordsListEl) return;
     
-    const records = getRecordsByUser(userId); // уже отсортированы по убыванию timestamp
+    const user = getAllUsers().find(u => u.id === userId);
+    selectedUserNameEl.textContent = user ? `Записи пользователя: ${user.name}` : '';
+    
+    const records = getRecordsByUser(userId);
     if (records.length === 0) {
         recordsListEl.innerHTML = '<p class="text-muted">Нет записей</p>';
         return;
     }
     
-    // Группируем по дате (строка YYYY-MM-DD)
+    // Группировка по дате
     const groupedByDate = {};
     records.forEach(rec => {
         const date = new Date(rec.timestamp);
-        const dateStr = date.toLocaleDateString('ru-RU'); // "11.03.2026"
-        if (!groupedByDate[dateStr]) {
-            groupedByDate[dateStr] = [];
-        }
+        const dateStr = date.toLocaleDateString('ru-RU');
+        if (!groupedByDate[dateStr]) groupedByDate[dateStr] = [];
         groupedByDate[dateStr].push(rec);
     });
     
-    // Преобразуем в массив и сортируем даты по убыванию (новые сверху)
+    // Сортировка дат (новые сверху)
     const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
-        // Преобразуем строки "dd.mm.yyyy" в объекты Date для сравнения
         const [d1, m1, y1] = a.split('.').map(Number);
         const [d2, m2, y2] = b.split('.').map(Number);
         const dateA = new Date(y1, m1 - 1, d1);
         const dateB = new Date(y2, m2 - 1, d2);
-        return dateB - dateA; // новые сверху
+        return dateB - dateA;
     });
     
     let html = '';
     sortedDates.forEach(dateStr => {
         const dayRecords = groupedByDate[dateStr];
-        // Группируем по патологии
+        
+        // Группировка по патологии
         const byPathology = {};
         dayRecords.forEach(rec => {
-            if (!byPathology[rec.pathologyName]) {
-                byPathology[rec.pathologyName] = [];
-            }
+            if (!byPathology[rec.pathologyName]) byPathology[rec.pathologyName] = [];
             byPathology[rec.pathologyName].push(rec);
         });
         
-        // Сортируем патологии по алфавиту
         const sortedPathologies = Object.keys(byPathology).sort((a, b) => a.localeCompare(b));
         
-        // Формируем блок даты
-        html += `<div class="mt-3 mb-2"><strong>${dateStr}</strong></div>`;
+        const dateId = 'date-' + dateStr.replace(/\./g, '-');
+        
+        html += `
+            <div class="date-group mb-2">
+                <div class="date-header p-2 bg-light border rounded" data-target="${dateId}" style="cursor: pointer; user-select: none;">
+                    <strong>${dateStr}</strong>
+                </div>
+                <div id="${dateId}" class="date-records collapse">
+        `;
         
         sortedPathologies.forEach(pathology => {
             const pathRecords = byPathology[pathology];
-            // Сортируем записи внутри патологии по времени (возрастание)
             pathRecords.sort((a, b) => a.timestamp - b.timestamp);
             
-            html += `<div class="ms-3 mb-2"><em>${pathology}</em></div>`;
+            html += `<div class="ms-3 mt-2"><em>${pathology}</em></div>`;
             html += `<div class="ms-4">`;
+            
             pathRecords.forEach(rec => {
                 const time = new Date(rec.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-                html += `<div class="mb-1">
-                    <span class="point-history-link" data-point-name="${rec.pointName}" data-pathology="${rec.pathologyName}" style="cursor:pointer; color:#0d6efd; text-decoration:underline;">${rec.pointName}</span>
-                    <span class="text-muted"> (${time})</span>
-                </div>`;
+                const shortName = rec.pointName.split('/')[0].trim();
+                const isSaved = rec.measurements && rec.measurements.saved;
+                const elediyaVal = rec.measurements?.elediya !== null ? rec.measurements.elediya : '';
+                const folVal = rec.measurements?.fol !== null ? rec.measurements.fol : '';
+                
+                let folClass = '';
+                if (isSaved && folVal !== '') {
+                    const num = parseFloat(folVal);
+                    if (!isNaN(num)) {
+                        if (num >= 0 && num <= 20) folClass = 'fol-range-0-20';
+                        else if (num >= 21 && num <= 28) folClass = 'fol-range-21-28';
+                        else if (num >= 29 && num <= 38) folClass = 'fol-range-29-38';
+                        else if (num >= 39 && num <= 48) folClass = 'fol-range-39-48';
+                        else if (num >= 49 && num <= 65) folClass = 'fol-range-49-65';
+                        else if (num >= 66 && num <= 80) folClass = 'fol-range-66-80';
+                        else if (num >= 81 && num <= 100) folClass = 'fol-range-81-100';
+                    }
+                }
+                
+                html += `
+                    <div class="record-row mb-2 p-1 border rounded" data-record-id="${rec.id}">
+                        <div class="d-flex align-items-center flex-wrap">
+                            <span class="point-history-link me-2" data-point-name="${rec.pointName}" data-pathology="${rec.pathologyName}" style="cursor:pointer; color:#0d6efd; text-decoration:underline;">
+                                <strong>${shortName}</strong> <span class="text-muted">(${time})</span>
+                            </span>
+                            <div class="d-flex gap-2 ms-auto">
+                                <input type="number" class="form-control form-control-sm elediya-input" style="width: 80px;" placeholder="эледия" value="${elediyaVal}" ${isSaved ? 'disabled' : ''}>
+                                <input type="number" class="form-control form-control-sm fol-input ${folClass}" style="width: 80px;" placeholder="фоль" value="${folVal}" ${isSaved ? 'disabled' : ''}>
+                                ${!isSaved ? '<button class="btn btn-sm btn-success save-measurement">save</button>' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
+            
             html += `</div>`;
         });
+        
+        html += `</div></div>`;
     });
     
     recordsListEl.innerHTML = html;
     
-    // Добавляем обработчики на ссылки точек
+    // Обработчики сворачивания/разворачивания дат
+    document.querySelectorAll('.date-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const targetId = header.dataset.target;
+            const targetDiv = document.getElementById(targetId);
+            if (targetDiv) {
+                targetDiv.classList.toggle('collapse');
+                targetDiv.classList.toggle('show');
+            }
+        });
+    });
+    
+    // Обработчики сохранения измерений
+    document.querySelectorAll('.save-measurement').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const recordRow = btn.closest('.record-row');
+            if (!recordRow) return;
+            const recordId = recordRow.dataset.recordId;
+            const elediyaInput = recordRow.querySelector('.elediya-input');
+            const folInput = recordRow.querySelector('.fol-input');
+            
+            const elediyaVal = elediyaInput.value.trim();
+            const folVal = folInput.value.trim();
+            
+            if (elediyaVal === '' && folVal === '') {
+                alert('Введите хотя бы одно значение');
+                return;
+            }
+            
+            const history = loadHistory();
+            const record = history.records.find(r => r.id === recordId);
+            if (!record) return;
+            
+            // Обновляем данные в localStorage
+            record.measurements = {
+                elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
+                fol: folVal !== '' ? parseFloat(folVal) : null,
+                saved: true
+            };
+            saveHistory(history);
+            
+            // Визуальные изменения в текущей записи
+            elediyaInput.disabled = true;
+            folInput.disabled = true;
+            btn.remove(); // убираем кнопку save
+            
+            // Применяем цвет рамки к полю фоль
+            if (folVal !== '') {
+                const num = parseFloat(folVal);
+                if (!isNaN(num)) {
+                    let folClass = '';
+                    if (num >= 0 && num <= 20) folClass = 'fol-range-0-20';
+                    else if (num >= 21 && num <= 28) folClass = 'fol-range-21-28';
+                    else if (num >= 29 && num <= 38) folClass = 'fol-range-29-38';
+                    else if (num >= 39 && num <= 48) folClass = 'fol-range-39-48';
+                    else if (num >= 49 && num <= 65) folClass = 'fol-range-49-65';
+                    else if (num >= 66 && num <= 80) folClass = 'fol-range-66-80';
+                    else if (num >= 81 && num <= 100) folClass = 'fol-range-81-100';
+                    
+                    folInput.classList.add(folClass);
+                }
+            }
+        });
+    });
+    
+    // Обработчики открытия карточки точки
     document.querySelectorAll('.point-history-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.stopPropagation();

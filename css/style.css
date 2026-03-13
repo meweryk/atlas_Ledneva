@@ -205,3 +205,48 @@ p, .page-text, .small-text {
 #pointCheckButton:hover {
     color: rgba(40, 167, 69, 0.8) !important;
 }
+
+/* Заголовки дат */
+.date-header {
+    background-color: #e9ecef;
+    border: 1px solid #ced4da;
+    transition: background-color 0.2s;
+}
+.date-header:hover {
+    background-color: #dde0e3;
+}
+
+/* Поля ввода */
+.fol-input {
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+/* Цвета рамки для фоль */
+.fol-range-0-20 {
+    border-color: #000 !important;
+    box-shadow: 0 0 0 0.2rem rgba(0,0,0,0.25);
+}
+.fol-range-21-28 {
+    border-color: #4B0082 !important; /* фиолетовый */
+    box-shadow: 0 0 0 0.2rem rgba(75,0,130,0.25);
+}
+.fol-range-29-38 {
+    border-color: #0000FF !important; /* синий */
+    box-shadow: 0 0 0 0.2rem rgba(0,0,255,0.25);
+}
+.fol-range-39-48 {
+    border-color: #00FFFF !important; /* голубой */
+    box-shadow: 0 0 0 0.2rem rgba(0,255,255,0.25);
+}
+.fol-range-49-65 {
+    border-color: #00FF00 !important; /* зелёный */
+    box-shadow: 0 0 0 0.2rem rgba(0,255,0,0.25);
+}
+.fol-range-66-80 {
+    border-color: #FFA500 !important; /* оранжевый */
+    box-shadow: 0 0 0 0.2rem rgba(255,165,0,0.25);
+}
+.fol-range-81-100 {
+    border-color: #FF0000 !important; /* красный */
+    box-shadow: 0 0 0 0.2rem rgba(255,0,0,0.25);
+}
+/* Для обычного состояния (не сохранено) рамка чёрная? По умолчанию Bootstrap даёт серую, оставим */
