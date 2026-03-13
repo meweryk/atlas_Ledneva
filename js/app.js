@@ -110,16 +110,17 @@ function afterDataChange() {
 }
 
 // ==============Навигация=============
-// Обновляем функцию showPage для поддержки historyPage
 function showPage(page) {
     const mainPage = document.getElementById('mainPage');
     const searchPage = document.getElementById('searchPage');
     const historyPage = document.getElementById('historyPage');
-    if (!mainPage || !searchPage || !historyPage) return;
+    const aboutPage = document.getElementById('aboutPage'); // добавить
+    if (!mainPage || !searchPage || !historyPage || !aboutPage) return;
     
     mainPage.style.display = 'none';
     searchPage.style.display = 'none';
     historyPage.style.display = 'none';
+    aboutPage.style.display = 'none';
     
     if (page === 'main') {
         updateMainPageGreeting();
@@ -133,6 +134,16 @@ function showPage(page) {
         historyPage.style.display = 'block';
         currentPage = 'history';
         renderHistoryPage();
+    } else if (page === 'about') {
+        aboutPage.style.display = 'block';
+        currentPage = 'about';
+        // Получаем версию из Service Worker и обновляем элемент
+        getVersionFromSW().then(version => {
+            const versionEl = document.getElementById('appVersion');
+            if (versionEl) {
+                versionEl.textContent = version || 'не определена';
+            }
+        });
     }
 }
 
@@ -199,7 +210,7 @@ function initNavigation() {
         navLinks.about.addEventListener('click', (e) => {
             e.preventDefault();
             setActiveNav('about');
-            alert('О проекте');
+            showPage('about');
             collapseNavbar();
         });
     }
@@ -841,6 +852,16 @@ updateTimerDisplay();
 console.log('Инициализация завершена');
 
 // ==================== История (History Manager) ====================
+// Получение версии из Service Worker
+async function getVersionFromSW() {
+    if (!navigator.serviceWorker.controller) return null;
+    return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = (e) => resolve(e.data.version);
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+    });
+}
+
 const HISTORY_STORAGE_KEY = 'atlas_history';
 
 // Структура по умолчанию
@@ -864,7 +885,21 @@ function loadHistory() {
     const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
     if (stored) {
         try {
-            return JSON.parse(stored);
+            const parsed = JSON.parse(stored);
+            // Миграция: добавляем поле measurements, если его нет
+            if (parsed.records && Array.isArray(parsed.records)) {
+                let changed = false;
+                parsed.records.forEach(rec => {
+                    if (!rec.measurements) {
+                        rec.measurements = { elediya: null, fol: null, saved: false };
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(parsed));
+                }
+            }
+            return parsed;
         } catch (e) {
             console.error('Ошибка парсинга истории', e);
             return defaultHistory;

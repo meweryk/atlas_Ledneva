@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3.75'; // не забудьте увеличить версию!
+const CACHE_VERSION = 'v3.76'; // не забудьте увеличить версию!
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -101,4 +101,10 @@ self.addEventListener('fetch', event => {
             return response || fetchPromise;
         })
     );
+});
+
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'GET_VERSION') {
+        event.ports[0].postMessage({ version: CACHE_VERSION });
+    }
 });
