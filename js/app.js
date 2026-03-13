@@ -245,13 +245,14 @@ function fillPathologyDatalist() {
 }
 
 // Рендер аккордеона
+// Рендер аккордеона
 function renderAccordion() {
     if (!pathologyAccordion) return;
     pathologyAccordion.innerHTML = '';
     pathologiesData.forEach((pathology, pathIdx) => {
         const itemId = `collapse-${pathIdx}`;
         const headingId = `heading-${pathIdx}`;
-
+        
         const pointsByArea = {};
         pathology.point.forEach((point, pointIdx) => {
             let area = 'другое';
@@ -261,7 +262,7 @@ function renderAccordion() {
             if (!pointsByArea[area]) pointsByArea[area] = [];
             pointsByArea[area].push({ point, pointIdx });
         });
-
+        
         const sortedAreas = Object.keys(pointsByArea).sort();
         let pointsHtml = '';
         sortedAreas.forEach(area => {
@@ -275,7 +276,24 @@ function renderAccordion() {
                 `;
             });
         });
-
+        
+        // Создаём кнопку удаления патологии
+        const deleteBtn = document.createElement('i');
+        deleteBtn.className = 'bi bi-trash ms-2 delete-pathology';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.color = '#dc3545';
+        deleteBtn.setAttribute('data-pathology-name', pathology.name);
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm(`Удалить патологию "${pathology.name}" и все её точки?`)) {
+                const index = pathologiesData.findIndex(p => p.name === pathology.name);
+                if (index !== -1) {
+                    pathologiesData.splice(index, 1);
+                    afterDataChange(); // перерисовывает и сохраняет
+                }
+            }
+        });
+        
         const accordionItem = document.createElement('div');
         accordionItem.className = 'accordion-item';
         accordionItem.innerHTML = `
@@ -288,9 +306,15 @@ function renderAccordion() {
                 <div class="accordion-body">${pointsHtml}</div>
             </div>
         `;
+        
+        // Вставляем кнопку удаления в заголовок (внутрь кнопки аккордеона)
+        const headerButton = accordionItem.querySelector('.accordion-button');
+        headerButton.appendChild(deleteBtn);
+        
         pathologyAccordion.appendChild(accordionItem);
     });
-
+    
+    // Остальные обработчики (точки и редактирование) остаются без изменений
     document.querySelectorAll('.point-name').forEach(el => {
         el.addEventListener('click', (e) => {
             const pathIdx = parseInt(el.dataset.pathIndex);
@@ -300,7 +324,7 @@ function renderAccordion() {
             showPointCard(pathology, point);
         });
     });
-
+    
     document.querySelectorAll('.point-edit').forEach(el => {
         el.addEventListener('click', (e) => {
             e.stopPropagation();
