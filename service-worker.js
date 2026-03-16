@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3.87'; // не забудьте увеличить версию!
+const CACHE_VERSION = 'v3.88'; // не забудьте увеличить версию!
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
