@@ -303,28 +303,30 @@
     <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            // Определяем базовый путь автоматически
-            const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
+            // Явний шлях до service-worker.js та scope для Атласу
+            const swUrl = '/atlas_Ledneva/service-worker.js';
+            const swScope = '/atlas_Ledneva/';
             
-            navigator.serviceWorker.register(`${basePath}/service-worker.js`, {
-                scope: `${basePath}/`
-            }).then(reg => {
-                console.log('SW registered:', reg);
-                
-                // Проверка обновлений
-                setInterval(() => reg.update(), 5 * 60 * 1000);
-                
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            if (confirm('Доступна новая версия приложения. Обновить?')) {
-                                window.location.reload();
+            navigator.serviceWorker.register(swUrl, { scope: swScope })
+                .then(reg => {
+                    console.log('SW registered with scope:', reg.scope);
+                    
+                    // Періодична перевірка оновлень (кожні 5 хвилин)
+                    setInterval(() => reg.update(), 5 * 60 * 1000);
+                    
+                    // Сповіщення про нову версію
+                    reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                if (confirm('Доступна нова версія додатку. Оновити?')) {
+                                    window.location.reload();
+                                }
                             }
-                        }
+                        });
                     });
-                });
-            }).catch(err => console.log('SW registration failed:', err));
+                })
+                .catch(err => console.error('SW registration failed:', err));
         });
     }
 </script>
