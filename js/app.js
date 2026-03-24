@@ -716,19 +716,86 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
 });
 
 document.getElementById('btn-export-csv')?.addEventListener('click', () => {
-    const rows = [['Патология', 'Название точки', 'Расположение', 'Описание', 'Ссылки на фото']];
-    pathologiesData.forEach(pathology => {
-        pathology.point.forEach(point => {
-            const images = point.images ? (Array.isArray(point.images) ? point.images.join(';') : point.images) : '';
-            rows.push([pathology.name, point.name, point.dispersion, point.description || '', images]);
+    try {
+        // Підраховуємо кількість точок для сповіщення
+        let totalPoints = 0;
+        pathologiesData.forEach(pathology => {
+            totalPoints += pathology.point.length;
         });
-    });
-    const csvContent = rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `atlasLed_${appStorage.appName}.csv`;
-    link.click();
+        
+        if (totalPoints === 0) {
+            showToast('Немає даних для експорту');
+            return;
+        }
+        
+        // Формуємо дані з версією
+        const rows = [
+            ['Версія', APP_VERSION, '', '', ''],
+            ['Патология', 'Название точки', 'Расположение', 'Описание', 'Ссылки на фото']
+        ];
+        
+        pathologiesData.forEach(pathology => {
+            pathology.point.forEach(point => {
+                // Обробка фото - використовуємо стандартний роздільник ;
+                let images = '';
+                if (point.images) {
+                    if (Array.isArray(point.images)) {
+                        // Фільтруємо пусті значення
+                        const validImages = point.images.filter(img => img && img.trim());
+                        images = validImages.join(';');
+                    } else if (typeof point.images === 'string') {
+                        images = point.images;
+                    }
+                }
+                
+                // Екранування полів для CSV
+                const escapeCSV = (str) => {
+                    if (str === undefined || str === null) return '';
+                    const string = String(str);
+                    // Якщо є коми, лапки або переходи рядка - обгортаємо в лапки
+                    if (string.includes(',') || string.includes('"') || string.includes('\n') || string.includes('\r')) {
+                        return '"' + string.replace(/"/g, '""') + '"';
+                    }
+                    return string;
+                };
+                
+                rows.push([
+                    escapeCSV(pathology.name),
+                    escapeCSV(point.name),
+                    escapeCSV(point.dispersion),
+                    escapeCSV(point.description || ''),
+                    escapeCSV(images)
+                ]);
+            });
+        });
+        
+        // Формуємо CSV з BOM для підтримки UTF-8
+        const csvContent = rows.map(row => row.join(',')).join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        // Створюємо ім'я файлу з датою та часом
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
+        const fileName = `atlasLed_${appStorage.appName}_${dateStr}.csv`;
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Звільняємо пам'ять
+        URL.revokeObjectURL(link.href);
+        
+        // Показуємо сповіщення
+        showToast(`Експортовано ${totalPoints} точок з ${pathologiesData.length} патологій`);
+        console.log(`Експорт завершено: ${fileName}`);
+        
+    } catch (error) {
+        console.error('Помилка експорту:', error);
+        alert('Помилка при експорті даних');
+    }
 });
 
 document.getElementById('btn-import-csv')?.addEventListener('click', () => {
@@ -742,41 +809,120 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
     const reader = new FileReader();
     reader.onload = (e) => {
         const text = e.target.result;
-        const rows = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"')));
         
-        const header = rows[0];
+        // Видаляємо BOM якщо є
+        const cleanText = text.replace(/^\uFEFF/, '');
         
+        // Парсинг CSV з урахуванням лапок
+        const rows = [];
+        let currentRow = [];
+        let currentCell = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < cleanText.length; i++) {
+            const char = cleanText[i];
+            const nextChar = cleanText[i + 1];
+            
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') {
+                    // Подвійні лапки всередині поля
+                    currentCell += '"';
+                    i++;
+                } else {
+                    // Перемикаємо стан лапок
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                // Кінець поля
+                currentRow.push(currentCell);
+                currentCell = '';
+            } else if (char === '\n' && !inQuotes) {
+                // Кінець рядка
+                currentRow.push(currentCell);
+                rows.push(currentRow);
+                currentRow = [];
+                currentCell = '';
+            } else {
+                currentCell += char;
+            }
+        }
+        // Додаємо останнє поле
+        if (currentCell !== '' || currentRow.length > 0) {
+            currentRow.push(currentCell);
+            rows.push(currentRow);
+        }
+        
+        if (rows.length === 0) {
+            alert('Файл порожній');
+            return;
+        }
+        
+        // Перевіряємо чи є версія в першому рядку
+        let startRow = 0;
+        let csvVersion = null;
+        
+        if (rows[0][0] === 'Версія') {
+            csvVersion = rows[0][1];
+            startRow = 1;
+            console.log('Версія CSV:', csvVersion);
+            
+            if (csvVersion !== APP_VERSION) {
+                if (!confirm(`CSV файл створено з версією ${csvVersion}, а поточна версія ${APP_VERSION}. Продовжити імпорт?`)) {
+                    return;
+                }
+            }
+        }
+        
+        const header = rows[startRow];
         if (!header || header.length < 4) {
             alert('Неправильний формат CSV файлу');
             return;
         }
         
-        rows.shift();
+        // Знаходимо індекси колонок
+        const pathIdx = header.findIndex(h => h.includes('Патология'));
+        const pointIdx = header.findIndex(h => h.includes('Название точки') || h.includes('Точка'));
+        const dispIdx = header.findIndex(h => h.includes('Расположение') || h.includes('Дисперсия'));
+        const descIdx = header.findIndex(h => h.includes('Описание'));
+        const imgIdx = header.findIndex(h => h.includes('Ссылки на фото') || h.includes('Фото') || h.includes('Images'));
+        
+        if (pathIdx === -1 || pointIdx === -1) {
+            alert('Не знайдено обов\'язкові колонки: Патология, Название точки');
+            return;
+        }
         
         let addedCount = 0;
         let updatedCount = 0;
         let skippedCount = 0;
-        let userDataProtected = 0; // лічильник захищених користувацьких даних
+        let userDataProtected = 0;
         
-        // Створюємо копію для порівняння
         const originalData = JSON.parse(JSON.stringify(pathologiesData));
         
-        rows.forEach(row => {
-            if (row.length < 4) {
+        for (let i = startRow + 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+            
+            const pathologyName = (row[pathIdx] || '').trim();
+            const pointName = (row[pointIdx] || '').trim();
+            const dispersion = dispIdx >= 0 ? (row[dispIdx] || '').trim() : '';
+            const description = descIdx >= 0 ? (row[descIdx] || '').trim() : '';
+            const imagesStr = imgIdx >= 0 ? (row[imgIdx] || '').trim() : '';
+            
+            if (!pathologyName || !pointName) {
                 skippedCount++;
-                return;
+                continue;
             }
             
-            const [pathologyName, pointName, dispersion, description, imagesStr = ''] = row;
-            
-            if (!pathologyName || !pointName || !dispersion) {
-                skippedCount++;
-                return;
-            }
-            
+            // Обробка зображень
             let images = [];
-            if (imagesStr && imagesStr.trim()) {
-                images = imagesStr.split(';').map(s => s.trim()).filter(s => s);
+            if (imagesStr) {
+                if (imagesStr.includes(';')) {
+                    images = imagesStr.split(';').map(s => s.trim()).filter(s => s);
+                } else if (imagesStr.includes(',')) {
+                    images = imagesStr.split(',').map(s => s.trim()).filter(s => s);
+                } else {
+                    images = [imagesStr];
+                }
             }
             
             let pathology = pathologiesData.find(p => p.name === pathologyName);
@@ -791,56 +937,27 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
             
             if (existingPoint) {
                 let needsUpdate = false;
-                let protectedFields = [];
                 
-                // ОНОВЛЕННЯ ОПИСУ - тільки якщо в користувача порожньо
-                if (description && description.length > 0) {
-                    const userDesc = existingPoint.description || '';
-                    if (userDesc === '' || userDesc.length < 5) {
-                        if (existingPoint.description !== description) {
-                            existingPoint.description = description;
-                            needsUpdate = true;
-                            console.log(`Оновлено опис для ${pointName}`);
-                        }
-                    } else {
-                        protectedFields.push('опис');
-                        userDataProtected++;
-                    }
+                // Оновлення опису
+                if (description && description.length > (existingPoint.description || '').length) {
+                    existingPoint.description = description;
+                    needsUpdate = true;
                 }
                 
-                // ОНОВЛЕННЯ РОЗТАШУВАННЯ - тільки якщо в користувача порожньо
-                if (dispersion && dispersion.length > 0) {
-                    const userDisp = existingPoint.dispersion || '';
-                    if (userDisp === '' || userDisp.length < 5) {
-                        if (existingPoint.dispersion !== dispersion) {
-                            existingPoint.dispersion = dispersion;
-                            needsUpdate = true;
-                            console.log(`Оновлено розташування для ${pointName}`);
-                        }
-                    } else {
-                        protectedFields.push('розташування');
-                        userDataProtected++;
-                    }
+                // Оновлення розташування
+                if (dispersion && dispersion.length > (existingPoint.dispersion || '').length) {
+                    existingPoint.dispersion = dispersion;
+                    needsUpdate = true;
                 }
                 
-                // ДОДАВАННЯ ФОТО - тільки якщо у користувача немає фото
-                if (images.length > 0) {
-                    const userImages = existingPoint.images || [];
-                    if (userImages.length === 0) {
-                        existingPoint.images = images;
-                        needsUpdate = true;
-                        console.log(`Додано фото для ${pointName}`);
-                    } else {
-                        protectedFields.push('фото');
-                        userDataProtected++;
-                    }
+                // Оновлення фото - тільки якщо в користувача немає фото
+                if (images.length > 0 && (!existingPoint.images || existingPoint.images.length === 0)) {
+                    existingPoint.images = images;
+                    needsUpdate = true;
                 }
                 
                 if (needsUpdate) {
                     updatedCount++;
-                    if (protectedFields.length > 0) {
-                        console.log(`Захищено користувацькі дані для ${pointName}: ${protectedFields.join(', ')}`);
-                    }
                 }
             } else {
                 pathology.point.push({
@@ -850,21 +967,18 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                     images: images
                 });
                 addedCount++;
-                console.log(`Додано нову точку: ${pointName}`);
             }
-        });
+        }
         
         if (addedCount > 0 || updatedCount > 0) {
-            // Перевіряємо, чи були зміни
             const hasChanges = JSON.stringify(originalData) !== JSON.stringify(pathologiesData);
             
             if (hasChanges) {
-                // Показуємо детальне сповіщення
                 let confirmMessage = `Знайдено нові дані в CSV:\n`;
                 confirmMessage += `- Додано точок: ${addedCount}\n`;
                 confirmMessage += `- Оновлено точок: ${updatedCount}\n`;
-                if (userDataProtected > 0) {
-                    confirmMessage += `- Захищено користувацьких даних: ${userDataProtected}\n`;
+                if (skippedCount > 0) {
+                    confirmMessage += `- Пропущено рядків: ${skippedCount}\n`;
                 }
                 confirmMessage += `\nПродовжити імпорт?`;
                 
@@ -877,8 +991,8 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                     afterDataChange();
                     
                     let message = `Імпорт завершено: додано ${addedCount} точок, оновлено ${updatedCount} точок`;
-                    if (userDataProtected > 0) {
-                        message += `, збережено ${userDataProtected} ваших правок`;
+                    if (skippedCount > 0) {
+                        message += `, пропущено ${skippedCount} рядків`;
                     }
                     showToast(message);
                     
@@ -888,12 +1002,9 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                         renderAccordion();
                     }
                 } else {
-                    // Відміна імпорту - відновлюємо дані
                     pathologiesData = originalData;
                     showToast('Імпорт скасовано');
                 }
-            } else {
-                showToast('Немає нових даних для імпорту');
             }
         } else {
             showToast('Немає нових даних для імпорту');
