@@ -1,3 +1,45 @@
+// ========== ДОДАТИ НА ПОЧАТОК ФАЙЛУ ==========
+// Клас для ізоляції даних
+class AppStorage {
+  constructor(appName = 'atlas_ledneva') {
+    this.prefix = `${appName}_`;
+    console.log('AppStorage префікс:', this.prefix);
+  }
+  
+  getKey(key) {
+    return `${this.prefix}${key}`;
+  }
+  
+  getItem(key) {
+    return localStorage.getItem(this.getKey(key));
+  }
+  
+  setItem(key, value) {
+    localStorage.setItem(this.getKey(key), value);
+  }
+  
+  // Міграція старих даних
+  migrateIfNeeded() {
+    const oldData = localStorage.getItem('atlas_ledneva_data');
+    const oldHistory = localStorage.getItem('atlas_history');
+    
+    if (oldData && !this.getItem('atlas_data')) {
+      this.setItem('atlas_data', oldData);
+      console.log('Мігровано atlas_data');
+    }
+    if (oldHistory && !this.getItem('atlas_history')) {
+      this.setItem('atlas_history', oldHistory);
+      console.log('Мігровано atlas_history');
+    }
+  }
+}
+
+// Глобальний екземпляр
+window.appStorage = new AppStorage();
+
+// Версія додатку (синхронізувати з service-worker.js)
+const APP_VERSION = "1.1.5";
+
 // Глобальные переменные
 let pathologiesData = [];
 let pathologyAccordion = document.getElementById('pathologyAccordion');
@@ -8,21 +50,63 @@ let currentEditIndex = -1;
 let currentPage = 'main';
 let navbarCollapse = document.getElementById('navbarNav');
 
-// Ключ для localStorage
-const STORAGE_KEY = 'atlas_ledneva_data';
+// ========== ЗМІНЕНІ ФУНКЦІЇ ДЛЯ РОБОТИ З LOCALSTORAGE ==========
+// Сохранение в localStorage
+function saveToLocalStorage() {
+    appStorage.setItem('atlas_data', JSON.stringify(pathologiesData));
+}
 
-// Загрузка данных при старте
-document.addEventListener('DOMContentLoaded', () => {
-    loadData();
-    initNavigation();
-});
+// Загрузка истории
+function loadHistory() {
+    const stored = appStorage.getItem('atlas_history');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            // Миграция: добавляем поле measurements, если его нет
+            if (parsed.records && Array.isArray(parsed.records)) {
+                let changed = false;
+                parsed.records.forEach(rec => {
+                    if (!rec.measurements) {
+                        rec.measurements = { elediya: null, fol: null, saved: false };
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    saveHistory(parsed);
+                }
+            }
+            return parsed;
+        } catch (e) {
+            console.error('Ошибка парсинга истории', e);
+            return { users: [], records: [] };
+        }
+    }
+    return { users: [], records: [] };
+}
 
+// Сохранение истории
+function saveHistory(history) {
+    appStorage.setItem('atlas_history', JSON.stringify(history));
+}
+
+// ========== ДОДАТИ НОВУ ФУНКЦІЮ ДЛЯ ОТРИМАННЯ ВЕРСІЇ ==========
+async function getVersionFromSW() {
+    if (!navigator.serviceWorker.controller) return null;
+    return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        channel.port1.onmessage = (e) => resolve(e.data.version);
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+    });
+}
+
+// ========== ЗМІНЕНА ФУНКЦІЯ loadData ==========
 async function loadData() {
+    // Мігруємо старі дані при першому запуску
+    appStorage.migrateIfNeeded();
+    
+    // Завантажуємо локальні дані з правильним ключем
     let localData = [];
-    let jsonData = [];
-    let updatedDescriptionsCount = 0;
-
-    const saved = localStorage.getItem(STORAGE_KEY);
+    const saved = appStorage.getItem('atlas_data');
     if (saved) {
         try {
             localData = JSON.parse(saved);
@@ -30,9 +114,19 @@ async function loadData() {
             console.error('Ошибка парсинга localStorage', e);
         }
     }
+    
+    let jsonData = [];
+    let updatedDescriptionsCount = 0;
 
+    // Перевіряємо версію
+    const swVersion = await getVersionFromSW();
+    const currentVersion = swVersion || APP_VERSION;
+    const savedVersion = appStorage.getItem('app_version');
+    
+    let needUpdate = (savedVersion !== currentVersion);
+    
     try {
-        const response = await fetch('point.json');
+        const response = await fetch('point.json', { cache: needUpdate ? 'no-cache' : 'default' });
         jsonData = await response.json();
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
@@ -91,17 +185,17 @@ async function loadData() {
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
 
+    // Зберігаємо нову версію
+    if (needUpdate) {
+        appStorage.setItem('app_version', currentVersion);
+        console.log('Оновлено версію додатку:', currentVersion);
+    }
+    
     afterDataChange(); // Сохранит исправленное в LocalStorage
     showPage('main');
 }
 
-
-
-// Сохранение в localStorage
-function saveToLocalStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(pathologiesData));
-}
-
+// ========== ВСІ ІНШІ ФУНКЦІЇ ЗАЛИШАЮТЬСЯ БЕЗ ЗМІН ==========
 // Функция, которая вызывается после любых изменений (добавление, редактирование, импорт)
 function afterDataChange() {
     renderAccordion();
@@ -109,12 +203,12 @@ function afterDataChange() {
     saveToLocalStorage();
 }
 
-// ==============Навигация=============
+// ========== Навигация ==========
 function showPage(page) {
     const mainPage = document.getElementById('mainPage');
     const searchPage = document.getElementById('searchPage');
     const historyPage = document.getElementById('historyPage');
-    const aboutPage = document.getElementById('aboutPage'); // добавить
+    const aboutPage = document.getElementById('aboutPage');
     if (!mainPage || !searchPage || !historyPage || !aboutPage) return;
     
     mainPage.style.display = 'none';
@@ -147,15 +241,14 @@ function showPage(page) {
     }
 }
 
-// Обновляем initNavigation для добавления обработчика истории
 function initNavigation() {
     const navLinks = {
         home: document.getElementById('nav-home'),
-        pathologies: document.getElementById('nav-pathologies'), // оставляем, но переименовали в истории? Лучше заменить
+        pathologies: document.getElementById('nav-pathologies'),
         points: document.getElementById('nav-points'),
         search: document.getElementById('nav-search'),
         about: document.getElementById('nav-about'),
-        history: document.getElementById('nav-history') // новый пункт
+        history: document.getElementById('nav-history')
     };
     
     const collapseNavbar = () => {
@@ -189,7 +282,6 @@ function initNavigation() {
             collapseNavbar();
         });
     }
-    // Остальные можно оставить как есть (или убрать)
     if (navLinks.pathologies) {
         navLinks.pathologies.addEventListener('click', (e) => {
             e.preventDefault();
@@ -216,7 +308,6 @@ function initNavigation() {
     }
 }
 
-// Обновляем setActiveNav, чтобы включить 'history'
 function setActiveNav(activeId) {
     const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history'];
     navLinks.forEach(id => {
@@ -231,8 +322,6 @@ function setActiveNav(activeId) {
     });
 }
 
-
-// Работа с формами
 function fillPathologyDatalist() {
     const datalist = document.getElementById('pathologyList');
     if (!datalist) return;
@@ -244,8 +333,6 @@ function fillPathologyDatalist() {
     });
 }
 
-// Рендер аккордеона
-// Рендер аккордеона
 function renderAccordion() {
     if (!pathologyAccordion) return;
     pathologyAccordion.innerHTML = '';
@@ -277,7 +364,6 @@ function renderAccordion() {
             });
         });
         
-        // Создаём кнопку удаления патологии
         const deleteBtn = document.createElement('i');
         deleteBtn.className = 'bi bi-trash ms-2 delete-pathology';
         deleteBtn.style.cursor = 'pointer';
@@ -289,7 +375,7 @@ function renderAccordion() {
                 const index = pathologiesData.findIndex(p => p.name === pathology.name);
                 if (index !== -1) {
                     pathologiesData.splice(index, 1);
-                    afterDataChange(); // перерисовывает и сохраняет
+                    afterDataChange();
                 }
             }
         });
@@ -307,14 +393,12 @@ function renderAccordion() {
             </div>
         `;
         
-        // Вставляем кнопку удаления в заголовок (внутрь кнопки аккордеона)
         const headerButton = accordionItem.querySelector('.accordion-button');
         headerButton.appendChild(deleteBtn);
         
         pathologyAccordion.appendChild(accordionItem);
     });
     
-    // Остальные обработчики (точки и редактирование) остаются без изменений
     document.querySelectorAll('.point-name').forEach(el => {
         el.addEventListener('click', (e) => {
             const pathIdx = parseInt(el.dataset.pathIndex);
@@ -337,7 +421,6 @@ function renderAccordion() {
     });
 }
 
-// Просмотр карточки точки
 function showPointCard(pathology, point) {
     const titleEl = document.getElementById('viewPointTitle');
     const dispEl = document.getElementById('viewDispersion');
@@ -400,13 +483,10 @@ function showPointCard(pathology, point) {
         }
     }
     
-    // ===== Галочка для добавления в историю =====
     const oldCheck = document.getElementById('pointCheckButton');
     if (oldCheck) oldCheck.remove();
     
-    // Галочка отображается только если есть изображения
     if (carouselContainer.style.display !== 'none') {
-        // Создаём кнопку-галочку
         const checkBtn = document.createElement('div');
         checkBtn.id = 'pointCheckButton';
         checkBtn.style.cssText = `
@@ -429,9 +509,8 @@ function showPointCard(pathology, point) {
         `;
         checkBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
         
-        // Определяем начальный цвет в зависимости от того, добавлена ли точка активным пользователем
         const activeUser = getActiveUser();
-        const oneHour = 60 * 60 * 1000; // 1 час
+        const oneHour = 60 * 60 * 1000;
         let isFresh = false;
         if (activeUser) {
             const lastTime = getLastRecordTime(point.name, activeUser.id);
@@ -440,14 +519,12 @@ function showPointCard(pathology, point) {
         }
         checkBtn.style.color = isFresh ? 'rgba(40, 167, 69, 1)' : 'rgba(40, 167, 69, 0.3)';
         
-        // Обработчик клика
         checkBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             
             let currentActive = getActiveUser();
             
-            // Если нет активного пользователя, предлагаем создать
             if (!currentActive) {
                 const name = prompt('Введите ваше имя для добавления в историю:');
                 if (!name || name.trim() === '') return;
@@ -460,7 +537,6 @@ function showPointCard(pathology, point) {
                 }
             }
             
-            // Проверяем, не добавлялась ли точка менее часа назад
             const last = getLastRecordTime(point.name, currentActive.id);
             const now = Date.now();
             if (last && (now - last) < oneHour) {
@@ -468,7 +544,6 @@ function showPointCard(pathology, point) {
                 return;
             }
             
-            // Добавляем запись
             const newRecord = addRecord({
                 pointName: point.name,
                 pathologyName: pathology.name,
@@ -481,7 +556,6 @@ function showPointCard(pathology, point) {
             }
         });
         
-        // Помещаем кнопку в контейнер карусели
         const pointCarousel = document.getElementById('pointCarousel');
         if (pointCarousel) {
             pointCarousel.style.position = 'relative';
@@ -491,7 +565,6 @@ function showPointCard(pathology, point) {
     viewPointModal.show();
 }
 
-// Открыть модалку редактирования
 function openEditModal(pathology, pointIdx, point) {
     const fields = {
         pointPathology: pathology.name,
@@ -512,7 +585,6 @@ function openEditModal(pathology, pointIdx, point) {
     pointModal.show();
 }
 
-// Открыть модалку добавления
 function openAddModal() {
     const ids = ['pointPathology', 'pointName', 'pointDispersion', 'pointDescription', 'pointImages', 'editPathology', 'editIndex'];
     ids.forEach(id => {
@@ -525,9 +597,9 @@ function openAddModal() {
     pointModal.show();
 }
 
+// ========== ОБРОБНИКИ ПОДІЙ ==========
 document.getElementById('btn-add-point')?.addEventListener('click', openAddModal);
 
-// Сохранение точки (добавление или редактирование)
 document.getElementById('savePointBtn')?.addEventListener('click', () => {
     const pathologyInput = document.getElementById('pointPathology')?.value.trim();
     const pointName = document.getElementById('pointName')?.value.trim();
@@ -581,7 +653,6 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
     pointModal.hide();
 });
 
-// Экспорт в CSV
 document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     const rows = [['Патология', 'Название точки', 'Расположение', 'Описание', 'Ссылки на фото']];
     pathologiesData.forEach(pathology => {
@@ -594,11 +665,10 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'atlasLed.csv';
+    link.download = `atlasLed_${appStorage.prefix.replace(/_$/, '')}.csv`;
     link.click();
 });
 
-// Импорт из CSV (с добавлением данных)
 document.getElementById('btn-import-csv')?.addEventListener('click', () => {
     document.getElementById('import-file')?.click();
 });
@@ -611,48 +681,31 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
     reader.onload = (e) => {
         const text = e.target.result;
         const rows = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"')));
-        rows.shift(); // удаляем заголовок
+        rows.shift();
 
         rows.forEach(row => {
             if (row.length < 4) return;
             const [pathologyName, pointName, dispersion, description, imagesStr = ''] = row;
             
-            // Ищем существующую патологию
             let pathology = pathologiesData.find(p => p.name === pathologyName);
             if (!pathology) {
-                // Если патологии нет, создаём новую
                 pathology = { name: pathologyName, links: [], point: [] };
                 pathologiesData.push(pathology);
             }
 
-            // Проверяем, есть ли уже такая точка в этой патологии
             const existingPoint = pathology.point.find(p => p.name === pointName);
             if (!existingPoint) {
-                // Если точки нет, добавляем
                 const images = imagesStr ? imagesStr.split(';').map(s => s.trim()) : [];
                 pathology.point.push({ name: pointName, dispersion, description, images });
             }
         });
 
-        // Сортируем патологии и сохраняем
         pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
         afterDataChange();
     };
     reader.readAsText(file, 'UTF-8');
     e.target.value = '';
 });
-
-// --- Функции для поиска и общих точек ---
-
-// Вспомогательная функция для получения краткого расположения из dispersion
-function getShortArea(dispersion) {
-    if (!dispersion) return '';
-    const colonIndex = dispersion.indexOf(':');
-    if (colonIndex > 0) {
-        return dispersion.substring(0, colonIndex).trim();
-    }
-    return 'другое';
-}
 
 function renderPathologyCheckboxes() {
     const container = document.getElementById('pathologyCheckboxList');
@@ -743,6 +796,15 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
     }
 });
 
+function getShortArea(dispersion) {
+    if (!dispersion) return '';
+    const colonIndex = dispersion.indexOf(':');
+    if (colonIndex > 0) {
+        return dispersion.substring(0, colonIndex).trim();
+    }
+    return 'другое';
+}
+
 document.getElementById('findCommonPointsBtn')?.addEventListener('click', () => {
     const checkboxes = document.querySelectorAll('#pathologyCheckboxList input[type="checkbox"]:checked');
     const selectedPathologies = Array.from(checkboxes).map(cb => cb.value);
@@ -756,7 +818,6 @@ document.getElementById('findCommonPointsBtn')?.addEventListener('click', () => 
         return path ? path.point.map(p => ({ name: p.name, dispersion: p.dispersion })) : [];
     });
 
-    // Получаем список общих названий точек
     const commonPointNames = pointsPerPathology
         .map(arr => arr.map(p => p.name))
         .reduce((acc, curr) => acc.filter(name => curr.includes(name)));
@@ -768,10 +829,8 @@ document.getElementById('findCommonPointsBtn')?.addEventListener('click', () => 
         return;
     }
 
-    // Для каждой общей точки нужно взять её расположение из первой патологии (или любой)
     let html = '';
     commonPointNames.forEach(pointName => {
-        // Найдём точку в первой выбранной патологии, чтобы получить dispersion
         const firstPathology = pathologiesData.find(p => p.name === selectedPathologies[0]);
         const point = firstPathology?.point.find(p => p.name === pointName);
         const shortArea = point ? getShortArea(point.dispersion) : '';
@@ -798,16 +857,10 @@ document.getElementById('clearCommonPointsBtn')?.addEventListener('click', () =>
     if (resultDiv) resultDiv.innerHTML = '';
 });
 
-// --- Секундомер с отладкой ---
-console.log('Инициализация секундомера...');
-
+// ========== Секундомер ==========
 const timerDisplay = document.getElementById('timerDisplay');
 const timerStartPauseBtn = document.getElementById('timerStartPause');
 const timerResetBtn = document.getElementById('timerReset');
-
-console.log('timerDisplay:', timerDisplay);
-console.log('timerStartPauseBtn:', timerStartPauseBtn);
-console.log('timerResetBtn:', timerResetBtn);
 
 let timerInterval = null;
 let timerSeconds = 0;
@@ -817,17 +870,14 @@ function updateTimerDisplay() {
     const minutes = Math.floor(timerSeconds / 60);
     const seconds = timerSeconds % 60;
     timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    console.log('Обновление дисплея:', timerDisplay.textContent);
 }
 
 function toggleTimer() {
-    console.log('toggleTimer вызван, текущее состояние running:', timerRunning);
     if (timerRunning) {
         clearInterval(timerInterval);
         timerInterval = null;
         timerRunning = false;
         timerStartPauseBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
-        console.log('Таймер остановлен');
     } else {
         timerRunning = true;
         timerStartPauseBtn.innerHTML = '<i class="bi bi-pause-circle-fill"></i>';
@@ -835,12 +885,10 @@ function toggleTimer() {
             timerSeconds++;
             updateTimerDisplay();
         }, 1000);
-        console.log('Таймер запущен');
     }
 }
 
 function resetTimer() {
-    console.log('resetTimer вызван');
     if (timerInterval) {
         clearInterval(timerInterval);
         timerInterval = null;
@@ -849,102 +897,33 @@ function resetTimer() {
     timerSeconds = 0;
     updateTimerDisplay();
     timerStartPauseBtn.innerHTML = '<i class="bi bi-play-circle-fill"></i>';
-    console.log('Таймер сброшен');
 }
 
 if (timerStartPauseBtn) {
-    timerStartPauseBtn.addEventListener('click', (e) => {
-        console.log('Клик по кнопке старт/пауза');
-        toggleTimer();
-    });
-    console.log('Обработчик старт/пауза добавлен');
-} else {
-    console.error('Кнопка старт/пауза не найдена!');
+    timerStartPauseBtn.addEventListener('click', toggleTimer);
 }
-
 if (timerResetBtn) {
-    timerResetBtn.addEventListener('click', (e) => {
-        console.log('Клик по кнопке сброса');
-        resetTimer();
-    });
-    console.log('Обработчик сброса добавлен');
-} else {
-    console.error('Кнопка сброса не найдена!');
+    timerResetBtn.addEventListener('click', resetTimer);
 }
-
 updateTimerDisplay();
-console.log('Инициализация завершена');
 
-// ==================== История (History Manager) ====================
-// Получение версии из Service Worker
-async function getVersionFromSW() {
-    if (!navigator.serviceWorker.controller) return null;
-    return new Promise((resolve) => {
-        const channel = new MessageChannel();
-        channel.port1.onmessage = (e) => resolve(e.data.version);
-        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
-    });
-}
-
+// ========== Функції для історії ==========
 const HISTORY_STORAGE_KEY = 'atlas_history';
 
-// Структура по умолчанию
-const defaultHistory = {
-    users: [], // [{ id: string, name: string, isActive: boolean }]
-    records: [] // [{ id: string, userId: string, pointName: string, pathologyName: string, shortArea: string, timestamp: number }]
-};
-
-// Возвращает timestamp последней записи точки для данного пользователя или null
 function getLastRecordTime(pointName, userId) {
     const history = loadHistory();
     const userRecords = history.records.filter(r => r.userId === userId && r.pointName === pointName);
     if (userRecords.length === 0) return null;
-    // Сортируем по убыванию времени и берём самую свежую
     userRecords.sort((a, b) => b.timestamp - a.timestamp);
     return userRecords[0].timestamp;
 }
 
-// Загрузка истории из localStorage
-function loadHistory() {
-    const stored = localStorage.getItem(HISTORY_STORAGE_KEY);
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            // Миграция: добавляем поле measurements, если его нет
-            if (parsed.records && Array.isArray(parsed.records)) {
-                let changed = false;
-                parsed.records.forEach(rec => {
-                    if (!rec.measurements) {
-                        rec.measurements = { elediya: null, fol: null, saved: false };
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(parsed));
-                }
-            }
-            return parsed;
-        } catch (e) {
-            console.error('Ошибка парсинга истории', e);
-            return defaultHistory;
-        }
-    }
-    return defaultHistory;
-}
-
-// Сохранение истории
-function saveHistory(history) {
-    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
-}
-
-// Получить активного пользователя (или null)
 function getActiveUser() {
     const history = loadHistory();
     const active = history.users.find(u => u.isActive === true);
     return active || null;
 }
 
-// Установить активного пользователя по ID
 function setActiveUser(userId) {
     const history = loadHistory();
     let changed = false;
@@ -967,33 +946,27 @@ function setActiveUser(userId) {
     return changed;
 }
 
-// Добавить нового пользователя (если пользователей нет, он становится активным)
 function addUser(name) {
     if (!name || name.trim() === '') return null;
     const history = loadHistory();
-    // Снимаем активность со всех текущих пользователей
     history.users.forEach(u => u.isActive = false);
     const newUser = {
         id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         name: name.trim(),
-        isActive: true // новый пользователь становится активным
+        isActive: true
     };
     history.users.push(newUser);
     saveHistory(history);
     return newUser;
 }
 
-// Удалить пользователя и все его записи
 function deleteUser(userId) {
     const history = loadHistory();
-    // Удаляем записи пользователя
     history.records = history.records.filter(r => r.userId !== userId);
-    // Удаляем пользователя
     const index = history.users.findIndex(u => u.id === userId);
     if (index !== -1) {
         const wasActive = history.users[index].isActive;
         history.users.splice(index, 1);
-        // Если был активным и есть другие пользователи, делаем первого активным
         if (wasActive && history.users.length > 0) {
             history.users[0].isActive = true;
         }
@@ -1003,7 +976,6 @@ function deleteUser(userId) {
     return false;
 }
 
-// Добавить запись для активного пользователя
 function addRecord(pointData) {
     const { pointName, pathologyName, dispersion } = pointData;
     if (!pointName || !pathologyName) return null;
@@ -1036,7 +1008,6 @@ function addRecord(pointData) {
     return newRecord;
 }
 
-// Получить записи для конкретного пользователя (отсортированы по убыванию времени)
 function getRecordsByUser(userId) {
     const history = loadHistory();
     return history.records
@@ -1044,15 +1015,13 @@ function getRecordsByUser(userId) {
         .sort((a, b) => b.timestamp - a.timestamp);
 }
 
-// Получить всех пользователей
 function getAllUsers() {
     const history = loadHistory();
     return history.users;
 }
 
-// ==================== Страница истории ====================
 function renderHistoryPage() {
-    const users = getAllUsers().sort((a, b) => a.name.localeCompare(b.name)); // сортировка по алфавиту
+    const users = getAllUsers().sort((a, b) => a.name.localeCompare(b.name));
     const accordion = document.getElementById('usersAccordion');
     const recordsContainer = document.getElementById('userRecordsContainer');
     const selectedUserNameEl = document.getElementById('selectedUserName');
@@ -1068,7 +1037,6 @@ function renderHistoryPage() {
         return;
     }
     
-    // Строим аккордеон только с заголовками (без тел)
     users.forEach((user, index) => {
         const itemId = `user-item-${index}`;
         const isActiveClass = user.isActive ? 'active-user' : '';
@@ -1084,34 +1052,24 @@ function renderHistoryPage() {
                 </button>
             </h2>
             <div id="${itemId}" class="accordion-collapse collapse" aria-labelledby="heading-user-${index}" data-bs-parent="#usersAccordion">
-                <div class="accordion-body p-2">
-                    <!-- тело пустое -->
-                </div>
+                <div class="accordion-body p-2"></div>
             </div>
         `;
         accordion.appendChild(accordionItem);
     });
     
-    // Обработчик клика по заголовку (кнопке) – делает пользователя активным, обнуляет таймер, показывает записи
     document.querySelectorAll('#usersAccordion .accordion-button').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            // Игнорируем, если клик по иконке удаления (уже обработано)
             if (e.target.closest('.delete-user')) return;
             
             const userId = btn.dataset.userId;
             if (!userId) return;
             
-            // Устанавливаем активного пользователя
             setActiveUser(userId);
             updateMainPageGreeting();
-            
-            // Обновляем отображение активного
             updateActiveUserDisplay();
-            
-            // Показываем записи этого пользователя
             showUserRecords(userId);
             
-            // Сворачиваем все открытые панели аккордеона
             const openCollapse = document.querySelector('#usersAccordion .accordion-collapse.show');
             if (openCollapse) {
                 const collapse = bootstrap.Collapse.getInstance(openCollapse);
@@ -1120,19 +1078,17 @@ function renderHistoryPage() {
         });
     });
     
-    // Обработчики удаления пользователя (иконка)
     document.querySelectorAll('.delete-user').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const userId = btn.dataset.userId;
             if (confirm('Удалить пользователя и все его записи?')) {
                 deleteUser(userId);
-                renderHistoryPage(); // перерендерить всю страницу
+                renderHistoryPage();
             }
         });
     });
     
-    // Показываем записи активного пользователя (если есть)
     const activeUser = getActiveUser();
     if (activeUser) {
         showUserRecords(activeUser.id);
@@ -1159,7 +1115,6 @@ function showUserRecords(userId) {
         return;
     }
     
-    // Группировка по дате
     const groupedByDate = {};
     records.forEach(rec => {
         const date = new Date(rec.timestamp);
@@ -1168,7 +1123,6 @@ function showUserRecords(userId) {
         groupedByDate[dateStr].push(rec);
     });
     
-    // Сортировка дат (новые сверху)
     const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
         const [d1, m1, y1] = a.split('.').map(Number);
         const [d2, m2, y2] = b.split('.').map(Number);
@@ -1181,7 +1135,6 @@ function showUserRecords(userId) {
     sortedDates.forEach(dateStr => {
         const dayRecords = groupedByDate[dateStr];
         
-        // Группировка по патологии
         const byPathology = {};
         dayRecords.forEach(rec => {
             if (!byPathology[rec.pathologyName]) byPathology[rec.pathologyName] = [];
@@ -1252,7 +1205,6 @@ function showUserRecords(userId) {
     
     recordsListEl.innerHTML = html;
     
-    // Обработчики сворачивания/разворачивания дат
     document.querySelectorAll('.date-header').forEach(header => {
         header.addEventListener('click', () => {
             const targetId = header.dataset.target;
@@ -1264,7 +1216,6 @@ function showUserRecords(userId) {
         });
     });
     
-    // Обработчики сохранения измерений
     document.querySelectorAll('.save-measurement').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1286,7 +1237,6 @@ function showUserRecords(userId) {
             const record = history.records.find(r => r.id === recordId);
             if (!record) return;
             
-            // Обновляем данные в localStorage
             record.measurements = {
                 elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
                 fol: folVal !== '' ? parseFloat(folVal) : null,
@@ -1294,12 +1244,10 @@ function showUserRecords(userId) {
             };
             saveHistory(history);
             
-            // Визуальные изменения в текущей записи
             elediyaInput.disabled = true;
             folInput.disabled = true;
-            btn.remove(); // убираем кнопку save
+            btn.remove();
             
-            // Применяем цвет рамки к полю фоль
             if (folVal !== '') {
                 const num = parseFloat(folVal);
                 if (!isNaN(num)) {
@@ -1318,7 +1266,6 @@ function showUserRecords(userId) {
         });
     });
     
-    // Обработчики открытия карточки точки
     document.querySelectorAll('.point-history-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1348,7 +1295,6 @@ function updateActiveUserDisplay() {
         const userId = btn.dataset.userId;
         if (userId === activeUser?.id) {
             btn.classList.add('active-user');
-            // Добавляем бейдж, если его нет
             if (!btn.querySelector('.badge.bg-success')) {
                 const nameSpan = btn.querySelector('span:first-child');
                 if (nameSpan) {
@@ -1366,18 +1312,29 @@ function updateActiveUserDisplay() {
     });
 }
 
-// Обработчик кнопки "Добавить имя"
 document.getElementById('addUserNameBtn')?.addEventListener('click', () => {
     const name = prompt('Введите имя пользователя:');
     if (name && name.trim() !== '') {
         const newUser = addUser(name.trim());
         if (newUser) {
-            renderHistoryPage(); // перерисовываем страницу истории
-            updateMainPageGreeting(); // обновляем приветствие на главной
-            // Показываем записи нового пользователя и обновляем заголовок
+            renderHistoryPage();
+            updateMainPageGreeting();
             showUserRecords(newUser.id);
             document.getElementById('selectedUserName').textContent = `Записи пользователя: ${newUser.name}`;
             alert(`Здравствуй, ${newUser.name}! Все последующие записи в истории принадлежат тебе.`);
         }
     }
+});
+
+// ========== ІНІЦІАЛІЗАЦІЯ ==========
+document.addEventListener('DOMContentLoaded', () => {
+    // Спочатку мігруємо дані
+    appStorage.migrateIfNeeded();
+    
+    // Завантажуємо дані
+    loadData();
+    initNavigation();
+    
+    // Ініціалізуємо секундомір
+    updateTimerDisplay();
 });
