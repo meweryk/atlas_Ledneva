@@ -738,33 +738,172 @@ document.getElementById('btn-import-csv')?.addEventListener('click', () => {
 document.getElementById('import-file')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+    
     const reader = new FileReader();
     reader.onload = (e) => {
         const text = e.target.result;
         const rows = text.split('\n').map(row => row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"')));
+        
+        const header = rows[0];
+        
+        if (!header || header.length < 4) {
+            alert('Неправильний формат CSV файлу');
+            return;
+        }
+        
         rows.shift();
-
+        
+        let addedCount = 0;
+        let updatedCount = 0;
+        let skippedCount = 0;
+        let userDataProtected = 0; // лічильник захищених користувацьких даних
+        
+        // Створюємо копію для порівняння
+        const originalData = JSON.parse(JSON.stringify(pathologiesData));
+        
         rows.forEach(row => {
-            if (row.length < 4) return;
+            if (row.length < 4) {
+                skippedCount++;
+                return;
+            }
+            
             const [pathologyName, pointName, dispersion, description, imagesStr = ''] = row;
             
+            if (!pathologyName || !pointName || !dispersion) {
+                skippedCount++;
+                return;
+            }
+            
+            let images = [];
+            if (imagesStr && imagesStr.trim()) {
+                images = imagesStr.split(';').map(s => s.trim()).filter(s => s);
+            }
+            
             let pathology = pathologiesData.find(p => p.name === pathologyName);
+            
             if (!pathology) {
                 pathology = { name: pathologyName, links: [], point: [] };
                 pathologiesData.push(pathology);
+                addedCount++;
             }
-
+            
             const existingPoint = pathology.point.find(p => p.name === pointName);
-            if (!existingPoint) {
-                const images = imagesStr ? imagesStr.split(';').map(s => s.trim()) : [];
-                pathology.point.push({ name: pointName, dispersion, description, images });
+            
+            if (existingPoint) {
+                let needsUpdate = false;
+                let protectedFields = [];
+                
+                // ОНОВЛЕННЯ ОПИСУ - тільки якщо в користувача порожньо
+                if (description && description.length > 0) {
+                    const userDesc = existingPoint.description || '';
+                    if (userDesc === '' || userDesc.length < 5) {
+                        if (existingPoint.description !== description) {
+                            existingPoint.description = description;
+                            needsUpdate = true;
+                            console.log(`Оновлено опис для ${pointName}`);
+                        }
+                    } else {
+                        protectedFields.push('опис');
+                        userDataProtected++;
+                    }
+                }
+                
+                // ОНОВЛЕННЯ РОЗТАШУВАННЯ - тільки якщо в користувача порожньо
+                if (dispersion && dispersion.length > 0) {
+                    const userDisp = existingPoint.dispersion || '';
+                    if (userDisp === '' || userDisp.length < 5) {
+                        if (existingPoint.dispersion !== dispersion) {
+                            existingPoint.dispersion = dispersion;
+                            needsUpdate = true;
+                            console.log(`Оновлено розташування для ${pointName}`);
+                        }
+                    } else {
+                        protectedFields.push('розташування');
+                        userDataProtected++;
+                    }
+                }
+                
+                // ДОДАВАННЯ ФОТО - тільки якщо у користувача немає фото
+                if (images.length > 0) {
+                    const userImages = existingPoint.images || [];
+                    if (userImages.length === 0) {
+                        existingPoint.images = images;
+                        needsUpdate = true;
+                        console.log(`Додано фото для ${pointName}`);
+                    } else {
+                        protectedFields.push('фото');
+                        userDataProtected++;
+                    }
+                }
+                
+                if (needsUpdate) {
+                    updatedCount++;
+                    if (protectedFields.length > 0) {
+                        console.log(`Захищено користувацькі дані для ${pointName}: ${protectedFields.join(', ')}`);
+                    }
+                }
+            } else {
+                pathology.point.push({
+                    name: pointName,
+                    dispersion: dispersion,
+                    description: description || '',
+                    images: images
+                });
+                addedCount++;
+                console.log(`Додано нову точку: ${pointName}`);
             }
         });
-
-        pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-        afterDataChange();
+        
+        if (addedCount > 0 || updatedCount > 0) {
+            // Перевіряємо, чи були зміни
+            const hasChanges = JSON.stringify(originalData) !== JSON.stringify(pathologiesData);
+            
+            if (hasChanges) {
+                // Показуємо детальне сповіщення
+                let confirmMessage = `Знайдено нові дані в CSV:\n`;
+                confirmMessage += `- Додано точок: ${addedCount}\n`;
+                confirmMessage += `- Оновлено точок: ${updatedCount}\n`;
+                if (userDataProtected > 0) {
+                    confirmMessage += `- Захищено користувацьких даних: ${userDataProtected}\n`;
+                }
+                confirmMessage += `\nПродовжити імпорт?`;
+                
+                if (confirm(confirmMessage)) {
+                    pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
+                    pathologiesData.forEach(pathology => {
+                        pathology.point.sort((a, b) => a.name.localeCompare(b.name));
+                    });
+                    
+                    afterDataChange();
+                    
+                    let message = `Імпорт завершено: додано ${addedCount} точок, оновлено ${updatedCount} точок`;
+                    if (userDataProtected > 0) {
+                        message += `, збережено ${userDataProtected} ваших правок`;
+                    }
+                    showToast(message);
+                    
+                    if (currentPage === 'search') {
+                        renderPathologyCheckboxes();
+                    } else if (currentPage === 'main') {
+                        renderAccordion();
+                    }
+                } else {
+                    // Відміна імпорту - відновлюємо дані
+                    pathologiesData = originalData;
+                    showToast('Імпорт скасовано');
+                }
+            } else {
+                showToast('Немає нових даних для імпорту');
+            }
+        } else {
+            showToast('Немає нових даних для імпорту');
+        }
     };
+    
+    reader.onerror = () => {
+        alert('Помилка читання файлу');
+    };
+    
     reader.readAsText(file, 'UTF-8');
     e.target.value = '';
 });
