@@ -1,9 +1,9 @@
-// ========== ДОДАТИ НА ПОЧАТОК ФАЙЛУ ==========
-// Клас для ізоляції даних
+// ========== ІЗОЛЯЦІЯ ДАНИХ ==========
 class AppStorage {
   constructor(appName = 'atlas_ledneva') {
-    this.prefix = `${appName}_`;
-    console.log('AppStorage префікс:', this.prefix);
+    this.appName = appName;
+    this.prefix = `${this.appName}_`;
+    console.log('AppStorage ініціалізовано з префіксом:', this.prefix);
   }
   
   getKey(key) {
@@ -18,23 +18,93 @@ class AppStorage {
     localStorage.setItem(this.getKey(key), value);
   }
   
-  // Міграція старих даних
+  removeItem(key) {
+    localStorage.removeItem(this.getKey(key));
+  }
+  
+  getAllKeys() {
+    return Object.keys(localStorage).filter(key => key.startsWith(this.prefix));
+  }
+  
+  // Міграція старих даних без префікса
   migrateIfNeeded() {
     const oldData = localStorage.getItem('atlas_ledneva_data');
     const oldHistory = localStorage.getItem('atlas_history');
+    const oldVersion = localStorage.getItem('app_version');
+    let migrated = false;
     
     if (oldData && !this.getItem('atlas_data')) {
       this.setItem('atlas_data', oldData);
       console.log('Мігровано atlas_data');
+      migrated = true;
     }
     if (oldHistory && !this.getItem('atlas_history')) {
       this.setItem('atlas_history', oldHistory);
       console.log('Мігровано atlas_history');
+      migrated = true;
     }
+    if (oldVersion && !this.getItem('app_version')) {
+      this.setItem('app_version', oldVersion);
+      console.log('Мігровано app_version');
+      migrated = true;
+    }
+    
+    return migrated;
+  }
+  
+  // Завантаження даних атласу
+  loadAtlasData() {
+    const stored = this.getItem('atlas_data');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (e) {
+        console.error('Помилка парсингу atlas_data', e);
+        return [];
+      }
+    }
+    return [];
+  }
+  
+  // Збереження даних атласу
+  saveAtlasData(data) {
+    this.setItem('atlas_data', JSON.stringify(data));
+  }
+  
+  // Завантаження історії
+  loadHistory() {
+    const stored = this.getItem('atlas_history');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        if (parsed.records && Array.isArray(parsed.records)) {
+          let changed = false;
+          parsed.records.forEach(rec => {
+            if (!rec.measurements) {
+              rec.measurements = { elediya: null, fol: null, saved: false };
+              changed = true;
+            }
+          });
+          if (changed) {
+            this.saveHistory(parsed);
+          }
+        }
+        return parsed;
+      } catch (e) {
+        console.error('Ошибка парсинга истории', e);
+        return { users: [], records: [] };
+      }
+    }
+    return { users: [], records: [] };
+  }
+  
+  // Збереження історії
+  saveHistory(history) {
+    this.setItem('atlas_history', JSON.stringify(history));
   }
 }
 
-// Глобальний екземпляр
+// Глобальний екземпляр для доступу з консолі
 window.appStorage = new AppStorage();
 
 // Версія додатку (синхронізувати з service-worker.js)
@@ -50,46 +120,19 @@ let currentEditIndex = -1;
 let currentPage = 'main';
 let navbarCollapse = document.getElementById('navbarNav');
 
-// ========== ЗМІНЕНІ ФУНКЦІЇ ДЛЯ РОБОТИ З LOCALSTORAGE ==========
-// Сохранение в localStorage
+// ========== ОНОВЛЕНІ ФУНКЦІЇ ДЛЯ РОБОТИ З LOCALSTORAGE ==========
 function saveToLocalStorage() {
-    appStorage.setItem('atlas_data', JSON.stringify(pathologiesData));
+    appStorage.saveAtlasData(pathologiesData);
 }
 
-// Загрузка истории
 function loadHistory() {
-    const stored = appStorage.getItem('atlas_history');
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            // Миграция: добавляем поле measurements, если его нет
-            if (parsed.records && Array.isArray(parsed.records)) {
-                let changed = false;
-                parsed.records.forEach(rec => {
-                    if (!rec.measurements) {
-                        rec.measurements = { elediya: null, fol: null, saved: false };
-                        changed = true;
-                    }
-                });
-                if (changed) {
-                    saveHistory(parsed);
-                }
-            }
-            return parsed;
-        } catch (e) {
-            console.error('Ошибка парсинга истории', e);
-            return { users: [], records: [] };
-        }
-    }
-    return { users: [], records: [] };
+    return appStorage.loadHistory();
 }
 
-// Сохранение истории
 function saveHistory(history) {
-    appStorage.setItem('atlas_history', JSON.stringify(history));
+    appStorage.saveHistory(history);
 }
 
-// ========== ДОДАТИ НОВУ ФУНКЦІЮ ДЛЯ ОТРИМАННЯ ВЕРСІЇ ==========
 async function getVersionFromSW() {
     if (!navigator.serviceWorker.controller) return null;
     return new Promise((resolve) => {
@@ -99,76 +142,93 @@ async function getVersionFromSW() {
     });
 }
 
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 9999;
+        font-size: 14px;
+    `;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 // ========== ЗМІНЕНА ФУНКЦІЯ loadData ==========
 async function loadData() {
-    // Мігруємо старі дані при першому запуску
-    appStorage.migrateIfNeeded();
+    console.log('=== ІНІЦІАЛІЗАЦІЯ АТЛАСУ ===');
+    console.log('Префікс додатку:', appStorage.prefix);
+    console.log('Ключі додатку в localStorage:', appStorage.getAllKeys());
     
-    // Завантажуємо локальні дані з правильним ключем
-    let localData = [];
-    const saved = appStorage.getItem('atlas_data');
-    if (saved) {
-        try {
-            localData = JSON.parse(saved);
-        } catch (e) {
-            console.error('Ошибка парсинга localStorage', e);
-        }
+    const migrated = appStorage.migrateIfNeeded();
+    if (migrated) {
+        console.log('Старі дані мігровано');
     }
+    
+    let localData = appStorage.loadAtlasData();
+    console.log('Завантажено локальних даних:', localData.length, 'патологій');
     
     let jsonData = [];
     let updatedDescriptionsCount = 0;
 
-    // Перевіряємо версію
     const swVersion = await getVersionFromSW();
     const currentVersion = swVersion || APP_VERSION;
     const savedVersion = appStorage.getItem('app_version');
+    console.log('Отримано версію з Service Worker:', currentVersion);
+    console.log('Збережена версія:', savedVersion);
     
     let needUpdate = (savedVersion !== currentVersion);
+    
+    if (needUpdate) {
+        console.log('Оновлення версії, завантаження point.json...');
+    }
     
     try {
         const response = await fetch('point.json', { cache: needUpdate ? 'no-cache' : 'default' });
         jsonData = await response.json();
+        console.log('point.json завантажено, кількість патологій:', jsonData.length);
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
     }
 
-    // Функция для очистки имени от альтернативных названий (после /)
     const normalizeName = (name) => name.split('/')[0].trim().toLowerCase();
 
     const mergedMap = new Map();
-    // 1. Сначала берем JSON как основу
     jsonData.forEach(p => mergedMap.set(p.name, p));
 
-    // 2. Сливаем с локальными данными
     localData.forEach(localPathology => {
         if (mergedMap.has(localPathology.name)) {
             const baseP = mergedMap.get(localPathology.name);
 
             localPathology.point.forEach(lp => {
                 const normLocalName = normalizeName(lp.name);
-                
-                // Ищем точку в JSON, сравнивая нормализованные имена
                 const basePoint = baseP.point.find(bp => normalizeName(bp.name) === normLocalName);
                 
                 if (basePoint) {
                     const localDesc = (lp.description || "").trim();
                     const baseDesc = (basePoint.description || "").trim();
 
-                    // Если в локальной базе описание короткое — берем из JSON
                     if (localDesc.length < 10 && baseDesc.length >= 10) {
                         console.log(`Обновлено описание для: ${lp.name} (совпало с ${basePoint.name})`);
                         lp.description = baseDesc;
                         updatedDescriptionsCount++;
                     }
 
-                    // Если в локальной базе точка называется короче (без /), 
-                    // обновляем её имя до полного из JSON
                     if (lp.name !== basePoint.name && basePoint.name.includes('/')) {
                         console.log(`Обновлено имя точки: ${lp.name} -> ${basePoint.name}`);
                         lp.name = basePoint.name;
                     }
 
-                    // Подтягиваем фото, если их нет
                     if ((!lp.images || lp.images.length === 0) && basePoint.images) {
                         lp.images = basePoint.images;
                     }
@@ -185,25 +245,29 @@ async function loadData() {
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Зберігаємо нову версію
     if (needUpdate) {
         appStorage.setItem('app_version', currentVersion);
         console.log('Оновлено версію додатку:', currentVersion);
+        if (updatedDescriptionsCount > 0) {
+            showToast(`Базу даних оновлено: ${updatedDescriptionsCount} описів`);
+        }
     }
     
-    afterDataChange(); // Сохранит исправленное в LocalStorage
+    console.log('=== ПОТОЧНИЙ СТАН ===');
+    console.log('Поточна версія:', appStorage.getItem('app_version'));
+    console.log('Кількість патологій:', pathologiesData.length);
+    
+    afterDataChange();
     showPage('main');
 }
 
-// ========== ВСІ ІНШІ ФУНКЦІЇ ЗАЛИШАЮТЬСЯ БЕЗ ЗМІН ==========
-// Функция, которая вызывается после любых изменений (добавление, редактирование, импорт)
+// ========== ВСІ ІНШІ ФУНКЦІЇ ==========
 function afterDataChange() {
     renderAccordion();
     fillPathologyDatalist();
     saveToLocalStorage();
 }
 
-// ========== Навигация ==========
 function showPage(page) {
     const mainPage = document.getElementById('mainPage');
     const searchPage = document.getElementById('searchPage');
@@ -231,7 +295,6 @@ function showPage(page) {
     } else if (page === 'about') {
         aboutPage.style.display = 'block';
         currentPage = 'about';
-        // Получаем версию из Service Worker и обновляем элемент
         getVersionFromSW().then(version => {
             const versionEl = document.getElementById('appVersion');
             if (versionEl) {
@@ -597,7 +660,6 @@ function openAddModal() {
     pointModal.show();
 }
 
-// ========== ОБРОБНИКИ ПОДІЙ ==========
 document.getElementById('btn-add-point')?.addEventListener('click', openAddModal);
 
 document.getElementById('savePointBtn')?.addEventListener('click', () => {
@@ -665,7 +727,7 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `atlasLed_${appStorage.prefix.replace(/_$/, '')}.csv`;
+    link.download = `atlasLed_${appStorage.appName}.csv`;
     link.click();
 });
 
@@ -908,8 +970,6 @@ if (timerResetBtn) {
 updateTimerDisplay();
 
 // ========== Функції для історії ==========
-const HISTORY_STORAGE_KEY = 'atlas_history';
-
 function getLastRecordTime(pointName, userId) {
     const history = loadHistory();
     const userRecords = history.records.filter(r => r.userId === userId && r.pointName === pointName);
@@ -1328,13 +1388,8 @@ document.getElementById('addUserNameBtn')?.addEventListener('click', () => {
 
 // ========== ІНІЦІАЛІЗАЦІЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
-    // Спочатку мігруємо дані
     appStorage.migrateIfNeeded();
-    
-    // Завантажуємо дані
     loadData();
     initNavigation();
-    
-    // Ініціалізуємо секундомір
     updateTimerDisplay();
 });
