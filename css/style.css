@@ -334,3 +334,24 @@ p, .page-text, .small-text {
         justify-content: center;
     }
 }
+
+#aboutPage .card-body,
+#aboutPage .card-body p,
+#aboutPage .card-body li,
+#aboutPage .card-body span,
+#aboutPage .card-body div:not(.pathology-grid):not(.pathology-col) {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+#aboutPage .card-body h3 {
+    font-size: 1.25rem;
+}
+
+#aboutPage .card-body h4 {
+    font-size: 1.1rem;
+}
+
+#aboutPage .card-body h5 {
+    font-size: 1rem;
+}
