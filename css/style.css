@@ -16,12 +16,16 @@ body {
 }
 
 .navbar, .footer {
-    background-color: var(--sage-light) !important;
+    background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    border-bottom: 1px solid #a5d6a7;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
     z-index: 1060;
 }
 
 .navbar-brand {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     color: var(--text-dark);
 }
 
@@ -39,8 +43,25 @@ body {
     text-decoration: underline;
 }
 
+/* Кнопка меню (завжди видима) */
+.navbar-toggle {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    color: #2c5e2e;
+    padding: 0 4px;
+    line-height: 1;
+    display: block;
+}
+
+.nuvbar-toggle:hover {
+    background-color: #c8e6c9;
+    border-radius: 4px;
+}
+
 main {
-    flex: 1;
+    flex: 1 0 auto;
 }
 
 h1, .h1, .page-title {
@@ -175,11 +196,15 @@ p, .page-text, .small-text {
 
 /* Мобильная адаптация */
 @media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
     .timer-display {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     .timer button i {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
     }
 }
 
