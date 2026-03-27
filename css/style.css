@@ -6,17 +6,18 @@
     --text-dark: #3a4a3a;
 }
 
-/* Убираем min-vh-100 из body в HTML, здесь управляем */
+/* Фиксируем навбар и футер, контент прокручивается внутри main */
 body {
     background-color: var(--parchment);
     color: var(--text-dark);
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* fallback */
-    min-height: 100dvh;
     margin: 0;
     padding: 0;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 .navbar, .footer {
@@ -30,8 +31,21 @@ body {
 }
 
 .footer {
-    margin-top: auto;
-    flex-shrink: 0;
+    margin-top: 0;
+}
+
+main {
+    flex: 1;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+}
+
+main > .container,
+main > .container-fluid {
+    padding-left: 8px;
+    padding-right: 8px;
 }
 
 .navbar-brand {
@@ -43,7 +57,6 @@ body {
 .nav-link {
     color: var(--text-dark);
 }
-
 .nav-link:hover {
     color: #2d5a2d;
 }
@@ -54,29 +67,27 @@ body {
     text-decoration: underline;
 }
 
+/* Кнопка меню — визуальный отклик без рамки */
 .navbar-toggler {
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
     padding: 0.25rem 0.5rem;
     font-size: 1.2rem;
+    transition: background-color 0.2s;
 }
-
-.navbar-toggler:focus {
-    box-shadow: none !important;
-    outline: none !important;
+.navbar-toggler:active {
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 4px;
 }
-
+.navbar-toggler:focus-visible {
+    outline: 2px solid #2d5a2d;
+    outline-offset: 2px;
+}
 .navbar-toggler-icon {
     width: 1.2rem;
     height: 1.2rem;
     background-size: contain;
-}
-
-main {
-    flex: 1;
-    width: 100%;
-    max-width: 100%;
 }
 
 h1, .h1, .page-title {
@@ -111,16 +122,14 @@ p, .page-text, .small-text {
     font-size: 0.7rem;
 }
 
+/* Аккордеон — без ограничений высоты */
 .accordion-scroll {
-    max-height: 60vh;
-    overflow-y: auto;
     border: 1px solid var(--sage);
     border-radius: 6px;
     padding: 4px;
     background-color: var(--light-parchment);
 }
 
-/* Принудительный уменьшенный padding, но стандартный размер шрифта */
 .accordion-button {
     padding: 0.5rem 0.75rem !important;
 }
@@ -137,22 +146,18 @@ p, .page-text, .small-text {
     border-radius: 4px;
     font-size: 0.9rem;
 }
-
 .point-item:hover {
     background-color: var(--sage);
 }
-
 .point-name {
     cursor: pointer;
     flex-grow: 1;
 }
-
 .point-edit {
     cursor: pointer;
     color: #6c757d;
     margin-left: 8px;
 }
-
 .point-edit:hover {
     color: #0d6efd;
 }
@@ -190,7 +195,6 @@ p, .page-text, .small-text {
     margin-left: auto;
     margin-right: auto;
 }
-
 .timer-display {
     font-size: 2.5rem;
     font-weight: 600;
@@ -199,7 +203,6 @@ p, .page-text, .small-text {
     line-height: 1;
     background: transparent;
 }
-
 .timer button {
     background: transparent !important;
     color: #2D5A2D !important;
@@ -209,11 +212,9 @@ p, .page-text, .small-text {
     box-shadow: none !important;
     padding: 0 !important;
 }
-
 .timer button:hover {
     color: #0d6efd !important;
 }
-
 .timer button i {
     font-size: 2rem;
     vertical-align: middle;
@@ -223,22 +224,18 @@ p, .page-text, .small-text {
     .navbar-brand {
         font-size: 1.1rem;
     }
-    
     .timer-display {
         font-size: 1.8rem;
     }
     .timer button i {
         font-size: 1.2rem;
     }
-    
     .accordion-button {
         padding: 0.4rem 0.6rem !important;
     }
-    
     .accordion-body {
         padding: 0.4rem 0.6rem !important;
     }
-    
     .point-item {
         padding: 1px 2px;
         font-size: 0.85rem;
@@ -315,11 +312,9 @@ p, .page-text, .small-text {
     height: 2rem;
     background-size: contain;
 }
-
 .carousel-control-prev-icon {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ff8080'%3e%3cpath d='M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z'/%3e%3c/svg%3e");
 }
-
 .carousel-control-next-icon {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ff8080'%3e%3cpath d='M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
 }
@@ -331,7 +326,6 @@ p, .page-text, .small-text {
     display: inline-block;
     width: auto;
 }
-
 .about-video .video-link {
     text-decoration: none;
     color: #2d5a2d;
@@ -340,11 +334,9 @@ p, .page-text, .small-text {
     align-items: center;
     gap: 8px;
 }
-
 .about-video .video-link:hover {
     color: #0d6efd;
 }
-
 .about-video .bi-youtube {
     font-size: 1.4rem;
     color: #ff0000;
@@ -356,17 +348,14 @@ p, .page-text, .small-text {
     gap: 1.5rem;
     margin-bottom: 1rem;
 }
-
 .pathology-col {
     flex: 1;
     min-width: 200px;
 }
-
 .pathology-col ul {
     margin-bottom: 0;
     padding-left: 1.2rem;
 }
-
 .pathology-col li {
     margin-bottom: 0.25rem;
     font-size: 0.9rem;
@@ -377,16 +366,13 @@ p, .page-text, .small-text {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
     .pathology-col {
         min-width: auto;
     }
-    
     .about-video {
         width: 100%;
         text-align: center;
     }
-    
     .about-video .video-link {
         justify-content: center;
     }
@@ -400,15 +386,32 @@ p, .page-text, .small-text {
     font-size: 14px;
     line-height: 1.5;
 }
-
 #aboutPage .card-body h3 {
     font-size: 1.25rem;
 }
-
 #aboutPage .card-body h4 {
     font-size: 1.1rem;
 }
-
 #aboutPage .card-body h5 {
     font-size: 1rem;
+}
+
+/* Стили для страницы истории */
+#historyPage .accordion {
+    margin-bottom: 1rem;
+}
+#userRecordsContainer {
+    margin-top: 1rem;
+}
+#recordsList {
+    max-height: none;
+}
+
+/* Стили для страницы поиска */
+#searchPage .card {
+    margin-bottom: 1rem;
+}
+#commonPointsResult {
+    max-height: 300px;
+    overflow-y: auto;
 }
