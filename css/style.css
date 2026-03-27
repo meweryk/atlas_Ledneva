@@ -12,7 +12,7 @@ body {
     font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .navbar, .footer {
@@ -24,13 +24,11 @@ body {
     z-index: 1060;
 }
 
-/* Фикс для футера - предотвращаем смещение за экран */
 .footer {
     margin-top: auto;
     flex-shrink: 0;
 }
 
-/* Бренд увеличен */
 .navbar-brand {
     font-size: 1.4rem;
     color: var(--text-dark);
@@ -51,7 +49,6 @@ body {
     text-decoration: underline;
 }
 
-/* Кнопка меню - уменьшена и без границы */
 .navbar-toggler {
     border: none !important;
     outline: none !important;
@@ -73,6 +70,8 @@ body {
 
 main {
     flex: 1 0 auto;
+    width: 100%;
+    max-width: 100%;
 }
 
 h1, .h1, .page-title {
@@ -107,7 +106,6 @@ p, .page-text, .small-text {
     font-size: 0.7rem;
 }
 
-/* Аккордеон - уменьшены отступы */
 .accordion-scroll {
     max-height: 60vh;
     overflow-y: auto;
@@ -117,13 +115,9 @@ p, .page-text, .small-text {
     background-color: var(--light-parchment);
 }
 
-.accordion-item {
-    margin-bottom: 2px;
-}
-
+/* Принудительный уменьшенный padding, но стандартный размер шрифта */
 .accordion-button {
     padding: 0.5rem 0.75rem !important;
-    font-size: 0.9rem;
 }
 
 .accordion-body {
@@ -185,7 +179,6 @@ p, .page-text, .small-text {
     background-color: var(--sage);
 }
 
-/* Секундомер - центрирование в навбаре, исходные размеры сохранены */
 .timer {
     font-family: monospace;
     background: transparent;
@@ -221,7 +214,6 @@ p, .page-text, .small-text {
     vertical-align: middle;
 }
 
-/* Мобильная адаптация */
 @media (max-width: 768px) {
     .navbar-brand {
         font-size: 1.1rem;
@@ -234,10 +226,8 @@ p, .page-text, .small-text {
         font-size: 1.2rem;
     }
     
-    /* Уменьшаем отступы в аккордеоне на мобильных */
     .accordion-button {
         padding: 0.4rem 0.6rem !important;
-        font-size: 0.85rem;
     }
     
     .accordion-body {
@@ -273,7 +263,6 @@ p, .page-text, .small-text {
     color: rgba(40, 167, 69, 0.8) !important;
 }
 
-/* Заголовки дат */
 .date-header {
     background-color: #e9ecef;
     border: 1px solid #ced4da;
@@ -283,11 +272,9 @@ p, .page-text, .small-text {
     background-color: #dde0e3;
 }
 
-/* Поля ввода */
 .fol-input {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
-/* Цвета рамки для фоль */
 .fol-range-0-20 {
     border-color: #000 !important;
     box-shadow: 0 0 0 0.2rem rgba(0,0,0,0.25);
@@ -332,7 +319,6 @@ p, .page-text, .small-text {
     background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ff8080'%3e%3cpath d='M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
 }
 
-/* Стили для страницы "О программе" */
 .about-video {
     background: #f0f4ea;
     border-radius: 8px;
