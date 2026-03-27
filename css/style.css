@@ -21,7 +21,7 @@ body {
 }
 
 .navbar-brand {
-    font-size: 1.1rem;
+    font-size: 1.5rem;
     color: var(--text-dark);
 }
 
@@ -146,8 +146,8 @@ p, .page-text, .small-text {
 }
 
 .timer-display {
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.5rem;
+    font-weight: 600;
     color: #f03c3c; /* тёмно-зелёный */
     text-shadow: 0 0 5px #2D5A2D85;
     line-height: 1;
@@ -176,7 +176,7 @@ p, .page-text, .small-text {
 /* Мобильная адаптация */
 @media (max-width: 768px) {
     .timer-display {
-        font-size: 1.5rem;
+        font-size: 2rem;
     }
     .timer button i {
         font-size: 1.5rem;
