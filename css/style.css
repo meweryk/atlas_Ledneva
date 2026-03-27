@@ -24,9 +24,17 @@ body {
     z-index: 1060;
 }
 
+/* Фикс для футера - предотвращаем смещение за экран */
+.footer {
+    margin-top: auto;
+    flex-shrink: 0;
+}
+
+/* Бренд увеличен */
 .navbar-brand {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     color: var(--text-dark);
+    font-weight: 600;
 }
 
 .nav-link {
@@ -43,21 +51,24 @@ body {
     text-decoration: underline;
 }
 
-/* Кнопка меню (завжди видима) */
-.navbar-toggle {
-    background: none;
-    border: none;
-    font-size: 1.6rem;
-    cursor: pointer;
-    color: #2c5e2e;
-    padding: 0 4px;
-    line-height: 1;
-    display: block;
+/* Кнопка меню - уменьшена и без границы */
+.navbar-toggler {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0.25rem 0.5rem;
+    font-size: 1.2rem;
 }
 
-.nuvbar-toggle:hover {
-    background-color: #c8e6c9;
-    border-radius: 4px;
+.navbar-toggler:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.navbar-toggler-icon {
+    width: 1.2rem;
+    height: 1.2rem;
+    background-size: contain;
 }
 
 main {
@@ -96,6 +107,7 @@ p, .page-text, .small-text {
     font-size: 0.7rem;
 }
 
+/* Аккордеон - уменьшены отступы */
 .accordion-scroll {
     max-height: 60vh;
     overflow-y: auto;
@@ -103,6 +115,19 @@ p, .page-text, .small-text {
     border-radius: 6px;
     padding: 4px;
     background-color: var(--light-parchment);
+}
+
+.accordion-item {
+    margin-bottom: 2px;
+}
+
+.accordion-button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.9rem;
+}
+
+.accordion-body {
+    padding: 0.5rem 0.75rem !important;
 }
 
 .point-item {
@@ -160,16 +185,18 @@ p, .page-text, .small-text {
     background-color: var(--sage);
 }
 
-/* Секундомер */
+/* Секундомер - центрирование в навбаре, исходные размеры сохранены */
 .timer {
     font-family: monospace;
     background: transparent;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .timer-display {
     font-size: 2.5rem;
     font-weight: 600;
-    color: #f03c3c; /* тёмно-зелёный */
+    color: #f03c3c;
     text-shadow: 0 0 5px #2D5A2D85;
     line-height: 1;
     background: transparent;
@@ -197,7 +224,7 @@ p, .page-text, .small-text {
 /* Мобильная адаптация */
 @media (max-width: 768px) {
     .navbar-brand {
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
     
     .timer-display {
@@ -205,6 +232,21 @@ p, .page-text, .small-text {
     }
     .timer button i {
         font-size: 1.2rem;
+    }
+    
+    /* Уменьшаем отступы в аккордеоне на мобильных */
+    .accordion-button {
+        padding: 0.4rem 0.6rem !important;
+        font-size: 0.85rem;
+    }
+    
+    .accordion-body {
+        padding: 0.4rem 0.6rem !important;
+    }
+    
+    .point-item {
+        padding: 1px 2px;
+        font-size: 0.85rem;
     }
 }
 
@@ -251,30 +293,29 @@ p, .page-text, .small-text {
     box-shadow: 0 0 0 0.2rem rgba(0,0,0,0.25);
 }
 .fol-range-21-28 {
-    border-color: #4B0082 !important; /* фиолетовый */
+    border-color: #4B0082 !important;
     box-shadow: 0 0 0 0.2rem rgba(75,0,130,0.25);
 }
 .fol-range-29-38 {
-    border-color: #0000FF !important; /* синий */
+    border-color: #0000FF !important;
     box-shadow: 0 0 0 0.2rem rgba(0,0,255,0.25);
 }
 .fol-range-39-48 {
-    border-color: #00FFFF !important; /* голубой */
+    border-color: #00FFFF !important;
     box-shadow: 0 0 0 0.2rem rgba(0,255,255,0.25);
 }
 .fol-range-49-65 {
-    border-color: #00FF00 !important; /* зелёный */
+    border-color: #00FF00 !important;
     box-shadow: 0 0 0 0.2rem rgba(0,255,0,0.25);
 }
 .fol-range-66-80 {
-    border-color: #FFA500 !important; /* оранжевый */
+    border-color: #FFA500 !important;
     box-shadow: 0 0 0 0.2rem rgba(255,165,0,0.25);
 }
 .fol-range-81-100 {
-    border-color: #FF0000 !important; /* красный */
+    border-color: #FF0000 !important;
     box-shadow: 0 0 0 0.2rem rgba(255,0,0,0.25);
 }
-/* Для обычного состояния (не сохранено) рамка чёрная? По умолчанию Bootstrap даёт серую, оставим */
 
 .carousel-control-prev-icon,
 .carousel-control-next-icon {
