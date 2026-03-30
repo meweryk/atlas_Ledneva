@@ -415,3 +415,53 @@ p, .page-text, .small-text {
     max-height: 300px;
     overflow-y: auto;
 }
+
+/* ========== АДАПТИВНЫЕ ИЗОБРАЖЕНИЯ В МОДАЛЬНОМ ОКНЕ КАРТОЧКИ ТОЧКИ ========== */
+#viewPointModal .modal-dialog {
+    max-width: 95vw;
+    margin: 1rem auto;
+}
+
+#viewPointModal .modal-body {
+    padding: 0.5rem;
+}
+
+#viewPointModal #pointCarousel {
+    margin: 0;
+    padding: 0;
+}
+
+#viewPointModal .carousel-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--light-parchment);
+    border-radius: 8px;
+}
+
+#viewPointModal .carousel-item {
+    text-align: center;
+}
+
+#viewPointModal .carousel-inner img {
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 60vh;
+    object-fit: contain;
+    display: inline-block;
+    margin: 0 auto;
+}
+
+#viewPointModal .carousel-control-prev,
+#viewPointModal .carousel-control-next {
+    width: 8%;
+    opacity: 0.7;
+}
+
+#viewPointModal .carousel-control-prev-icon,
+#viewPointModal .carousel-control-next-icon {
+    width: 2rem;
+    height: 2rem;
+    background-size: contain;
+}
