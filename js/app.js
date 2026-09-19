@@ -576,7 +576,7 @@ function showPointCard(pathology, point) {
         const oneHour = 60 * 60 * 1000;
         let isFresh = false;
         if (activeUser) {
-            const lastTime = getLastRecordTime(point.name, activeUser.id);
+            const lastTime = getLastRecordTime(point.name, pathology.name, activeUser.id);
             const now = Date.now();
             isFresh = lastTime && (now - lastTime) < oneHour;
         }
@@ -600,7 +600,7 @@ function showPointCard(pathology, point) {
                 }
             }
             
-            const last = getLastRecordTime(point.name, currentActive.id);
+            const last = getLastRecordTime(point.name, pathology.name, currentActive.id);
             const now = Date.now();
             if (last && (now - last) < oneHour) {
                 alert('Эта точка уже была добавлена в течение последнего часа. Попробуйте позже.');
@@ -1287,9 +1287,13 @@ if (timerResetBtn) {
 updateTimerDisplay();
 
 // ========== Функції для історії ==========
-function getLastRecordTime(pointName, userId) {
+function getLastRecordTime(pointName, pathologyName, userId) {
     const history = loadHistory();
-    const userRecords = history.records.filter(r => r.userId === userId && r.pointName === pointName);
+    const userRecords = history.records.filter(r =>
+        r.userId === userId &&
+        r.pointName === pointName &&
+        r.pathologyName === pathologyName
+    );
     if (userRecords.length === 0) return null;
     userRecords.sort((a, b) => b.timestamp - a.timestamp);
     return userRecords[0].timestamp;
