@@ -1,6 +1,8 @@
+ищи
 /* ============================================================
    nozod.js — вкладка «Нозод»: аккордеон + воспроизведение + WAV
-   Стерео: левый канал sin(ωt), правый cos(ωt) — сдвиг 90°.
+   Стерео: левый канал sin(ωt − π/2), правый sin(ωt) — сдвиг 90°.
+   Навигация управляется из app.js через window.Nozod.
    ============================================================ */
 (function () {
     'use strict';
@@ -271,8 +273,7 @@
      *   правый канал = sin(ωt)               (напрямую)
      *   левый  канал = sin(ωt − π/2)         (через DelayNode на T/4)
      * Итог: правый канал опережает левый на 90°.
-     * Абсолютная задержка разная для каждой частоты, но относительный
-     * фазовый сдвиг одинаков — ровно 90° на каждой из них.
+     * Относительный фазовый сдвиг одинаков — ровно 90° на каждой частоте.
      */
     function playFrequencies(freqs, btn) {
         stopAll();
@@ -300,9 +301,9 @@
 
             // Левый канал — через задержку T/4 (90°)
             const delayL = ctx.createDelay(1.0);
-            // Ограничим минимальным разумным значением, чтобы не уйти в 0
             const quarterPeriod = 1 / (4 * f);
-            delayL.delayTime.value = Math.max(quarterPeriod, 0.00001);
+            // Минимум — 1 sample, чтобы DelayNode не срезал задержку в 0
+            delayL.delayTime.value = Math.max(quarterPeriod, 1 / SAMPLE_RATE);
             osc.connect(delayL);
             delayL.connect(merger, 0, 0);
 
@@ -366,8 +367,8 @@
             let right = 0;
             for (let k = 0; k < freqs.length; k++) {
                 const phase = twoPi * freqs[k] * t;
-                left  += Math.sin(phase);                 // sin(ωt)
-                right += Math.sin(phase + halfPi);        // sin(ωt + π/2) = cos(ωt)
+                left  += Math.sin(phase - halfPi);        // sin(ωt − π/2)
+                right += Math.sin(phase);                 // sin(ωt)
             }
             left  *= amp;
             right *= amp;
@@ -499,7 +500,7 @@
         }
     }
 
-    /* ---------- Обработчики ---------- */
+    /* ---------- Обработчики кликов ---------- */
 
     document.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-action]');
@@ -522,68 +523,13 @@
         }
     });
 
-    /* ---------- Интеграция с навигацией ---------- */
-
-    /* ---------- Интеграция с навигацией ---------- */
-
-function showNozodPage(e) {
-    if (e) {
-        e.preventDefault();
-        // Не даём app.js перехватить клик и показать «Главную»
-        e.stopPropagation();
-    }
-    
-    // Скрываем все страницы, включая саму nozodPage (на случай повторного клика)
-    ['mainPage', 'historyPage', 'searchPage', 'aboutPage', 'nozodPage'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = 'none';
-    });
-    
-    const page = document.getElementById('nozodPage');
-    if (page) page.style.display = 'block';
-    
-    document.querySelectorAll('.navbar-nav .nav-link').forEach(a => a.classList.remove('active'));
-    const link = document.getElementById('nav-nozod');
-    if (link) link.classList.add('active');
-    
-    loadNozodes();
-}
-
-function hideNozodPage() {
-    const page = document.getElementById('nozodPage');
-    if (page) page.style.display = 'none';
-    stopAll();
-}
-
-function bindNav() {
-    const link = document.getElementById('nav-nozod');
-    if (link) {
-        // capture: true — перехватываем клик до app.js
-        link.addEventListener('click', showNozodPage, true);
-    }
-    
-    // При клике на любой другой пункт меню — прячем страницу нозодов и глушим звук
-    ['nav-home', 'nav-history', 'nav-search', 'nav-about'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('click', hideNozodPage);
-    });
-    
-    // Esc — глушим звук (не прячем страницу)
-    document.addEventListener('keydown', ev => {
+    // Esc в любом месте приложения — глушим звук
+    document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape') stopAll();
     });
-}
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindNav);
-} else {
-    bindNav();
-}
-
-    // Публичный API
     window.Nozod = {
-        stopAll,
-        load: loadNozodes,
-        show: showNozodPage
+        stopAll: stopAll,
+        load: loadNozodes
     };
 })();

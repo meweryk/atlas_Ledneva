@@ -265,12 +265,19 @@ function showPage(page) {
     const searchPage = document.getElementById('searchPage');
     const historyPage = document.getElementById('historyPage');
     const aboutPage = document.getElementById('aboutPage');
+    const nozodPage = document.getElementById('nozodPage');
     if (!mainPage || !searchPage || !historyPage || !aboutPage) return;
     
     mainPage.style.display = 'none';
     searchPage.style.display = 'none';
     historyPage.style.display = 'none';
     aboutPage.style.display = 'none';
+    if (nozodPage) nozodPage.style.display = 'none';
+    
+    // Уход с любой страницы, кроме «Нозод», глушит воспроизведение
+    if (page !== 'nozod' && window.Nozod && window.Nozod.stopAll) {
+        window.Nozod.stopAll();
+    }
     
     if (page === 'main') {
         updateMainPageGreeting();
@@ -293,18 +300,25 @@ function showPage(page) {
                 versionEl.textContent = version || 'не определена';
             }
         });
+    } else if (page === 'nozod') {
+        if (nozodPage) nozodPage.style.display = 'block';
+        currentPage = 'nozod';
+        if (window.Nozod && window.Nozod.load) {
+            window.Nozod.load();
+        }
     }
 }
 
 function initNavigation() {
     const navLinks = {
-        home: document.getElementById('nav-home'),
-        pathologies: document.getElementById('nav-pathologies'),
-        points: document.getElementById('nav-points'),
-        search: document.getElementById('nav-search'),
-        about: document.getElementById('nav-about'),
-        history: document.getElementById('nav-history')
-    };
+    home: document.getElementById('nav-home'),
+    pathologies: document.getElementById('nav-pathologies'),
+    points: document.getElementById('nav-points'),
+    search: document.getElementById('nav-search'),
+    about: document.getElementById('nav-about'),
+    history: document.getElementById('nav-history'),
+    nozod: document.getElementById('nav-nozod') // ← новая строка
+};
     
     const collapseNavbar = () => {
         if (navbarCollapse && navbarCollapse.classList.contains('show')) {
@@ -361,10 +375,18 @@ function initNavigation() {
             collapseNavbar();
         });
     }
+    if (navLinks.nozod) {
+    navLinks.nozod.addEventListener('click', (e) => {
+        e.preventDefault();
+        setActiveNav('nozod');
+        showPage('nozod');
+        collapseNavbar();
+    });
+}
 }
 
 function setActiveNav(activeId) {
-    const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history'];
+    const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history', 'nozod'];
     navLinks.forEach(id => {
         const el = document.getElementById(`nav-${id}`);
         if (el) {
