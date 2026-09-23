@@ -690,7 +690,7 @@ function showPointCard(pathology, point) {
         }
     }
     
-    // ========== ГАЛОЧКА НА ФОТО ==========
+    // ========== ЧЕКБОКС НА ФОТО ==========
     const oldCheck = document.getElementById('pointCheckButton');
     if (oldCheck) oldCheck.remove();
     
