@@ -612,6 +612,1046 @@
       "function": "Применяется при хронических гепатитах, поддержка функции печени.",
       "category": "viral",
       "source": "CALF"
-    }
+    },
+    {
+  "name": "Amoeba",
+  "frequencies": "310; 333; 532; 732; 769; 827; 1522",
+  "description": "Нозод одноклеточных простейших-амёб, общий набор для разных видов. Применяется при амёбиазе, кишечных и тканевых поражениях, вызванных амёбами.",
+  "function": "Подавление жизнедеятельности амёб, санация очагов в кишечнике и тканях.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Amoeba_hepar_abcess",
+  "frequencies": "344; 605; 510; 943",
+  "description": "Нозод амёбного абсцесса печени (Entamoeba histolytica). Применяется при амёбных абсцессах и гепатомегалии.",
+  "function": "Подавление простейших и санация печёночных очагов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "African_trypanosomiasis",
+  "frequencies": "656; 988; 780",
+  "description": "Африканская сонная болезнь (Trypanosoma brucei). Нозод вызывает поражение ЦНС, лимфатической системы и крови.",
+  "function": "Подавление трипаносом, поддержка нервной системы.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Babesia",
+  "frequencies": "76; 570; 1583; 1584; 432; 753; 5776",
+  "description": "Нозод простейших рода Babesia, переносимых иксодовыми клещами. Часто сопутствует болезни Лайма, вызывает бабезиоз с лихорадкой и гемолизом.",
+  "function": "Подавление бабезий, снижение гемолитических реакций.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Balantidium_coli_HC",
+  "frequencies": "22902.05; 1140.23",
+  "description": "Нозод высокой концентрации Balantidium coli — крупнейшей реснитчатой инфузории человека. Вызывает тяжёлый колит с изъязвлениями.",
+  "function": "Санация толстого кишечника при балантидиазе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Besnoitia_HC",
+  "frequencies": "17823.77; 887.39",
+  "description": "Нозод высокой концентрации простейшего Besnoitia, выделенного из тканей лёгких. Применяется при протозойных поражениях тканей.",
+  "function": "Подавление Besnoitia, санация тканевых очагов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Blastocystis_hominis",
+  "frequencies": "365; 595; 844; 848; 1201; 1243; 5777; 11425; 11841; 11967; 13145; 13469; 21776",
+  "description": "Нозод Blastocystis hominis — простейшего, часто обнаруживаемого при хронических диареях, СРК и крапивнице.",
+  "function": "Подавление бластоцисты, восстановление микрофлоры кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Blepharisma",
+  "frequencies": "3120",
+  "description": "Нозод инфузории Blepharisma — свободноживущего простейшего, иногда встречающегося в загрязнённой воде.",
+  "function": "Санация при контаминации простейшими.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Blepharisma_HC",
+  "frequencies": "20238.44; 1007.61",
+  "description": "Нозод высокой концентрации Blepharisma.",
+  "function": "Подавление инфузорий.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Chilomastix_HC",
+  "frequencies": "19367.17; 964.23; 21209.29; 1055.95",
+  "description": "Нозод высокой концентрации Chilomastix — жгутикового простейшего, вызывающего цисты в кишечнике.",
+  "function": "Санация кишечника при хиломастикозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Chilomonas_HC",
+  "frequencies": "19815.25; 986.54",
+  "description": "Нозод высокой концентрации Chilomonas — жгутиконосца, обнаруживаемого в кишечнике.",
+  "function": "Подавление жгутиковых простейших.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Cryptosporidium",
+  "frequencies": "220; 482; 575; 4122; 698; 711; 893; 895; 1276; 5690",
+  "description": "Нозод Cryptosporidium — паразитического простейшего, вызывающего криптоспоридиоз с диареей, особенно у иммунодефицитных пациентов.",
+  "function": "Подавление криптоспоридий, восстановление эпителия кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Cyclosporia",
+  "frequencies": "543; 316; 992; 751; 268; 2144",
+  "description": "Нозод простейших рода Cyclospora — возбудителей цистоспороза с затяжной диареей.",
+  "function": "Санация кишечника, подавление цистоспор.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Dientamoeba_fragilis_HC",
+  "frequencies": "20113.98; 1001.42",
+  "description": "Нозод высокой концентрации Dientamoeba fragilis — простейшего, связанного с хроническими кишечными расстройствами.",
+  "function": "Подавление динтамебы, нормализация работы ЖКТ.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Endolimax_nana_HC",
+  "frequencies": "19715.68; 981.59; 21508.01; 1070.82",
+  "description": "Нозод высокой концентрации Endolimax nana — вегетативных форм и цист непатогенной, но часто встречающейся амёбы.",
+  "function": "Санация кишечника при эндолимакс-контаминации.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Entamoeba_coil_HC",
+  "frequencies": "19715.68; 981.59",
+  "description": "Нозод высокой концентрации Entamoeba coli (вегетативная форма) — непатогенной амёбы толстого кишечника.",
+  "function": "Санация кишечной микрофлоры.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Entamoeba_gingivalis_HC",
+  "frequencies": "21806.74; 1085.69",
+  "description": "Нозод высокой концентрации Entamoeba gingivalis — амёбы полости рта, связанной с гингивитом и пародонтитом.",
+  "function": "Санация полости рта, подавление амёб дёсен.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Entamoeba_histolytica",
+  "frequencies": "148; 166; 308; 393; 631; 778",
+  "description": "Нозод Entamoeba histolytica — дизентерийной амёбы, вызывающей амёбную дизентерию и абсцессы печени.",
+  "function": "Подавление дизентерийной амёбы, санация кишечника и печени.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Entamoeba_histolytica_HC",
+  "frequencies": "19168.02; 954.32",
+  "description": "Нозод высокой концентрации Entamoeba histolytica.",
+  "function": "Санация при амёбиазе высокой интенсивности.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Entamoeba_histolytica_secondary",
+  "frequencies": "1552; 880; 802; 1550; 832; 787; 727; 690; 660; 465; 786; 768; 523; 333",
+  "description": "Дополнительный набор частот для случаев амёбиаза с сопутствующей микрофлорой.",
+  "function": "Комплексная санация при затяжном амёбиазе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "lodamoeba_butschlii_HC",
+  "frequencies": "22155.25; 1103.04",
+  "description": "Нозод высокой концентрации Iodamoeba butschlii — непатогенной амёбы, но часто встречающейся при дисбактериозе.",
+  "function": "Санация кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Leucocytozoon_HC",
+  "frequencies": "19914.83; 991.50",
+  "description": "Нозод высокой концентрации Leucocytozoon — простейшего, паразитирующего в клетках крови птиц; может быть актуален при гемопаразитозах.",
+  "function": "Подавление гемопаразитов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Myxosoma_HC",
+  "frequencies": "20611.85; 1026.20",
+  "description": "Нозод высокой концентрации Myxosoma — паразитического простейшего из группы миксоспоридий.",
+  "function": "Подавление миксоспоридий.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Naegleria_fowleri_HC",
+  "frequencies": "18022.92; 897.31",
+  "description": "Нозод высокой концентрации Naegleria fowleri — амёбы-«мозгоеда», вызывающей первичный амёбный менингоэнцефалит.",
+  "function": "Подавление наеглерии, поддержка ЦНС.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Paramecium_caudatum",
+  "frequencies": "4500; 1150; 2298",
+  "description": "Нозод инфузории Paramecium caudatum — свободноживущего простейшего, используемого как модельный организм.",
+  "function": "Санация при контаминации инфузориями.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Sarcocystis_HC",
+  "frequencies": "22503.75; 1120.40",
+  "description": "Нозод высокой концентрации Sarcocystis — простейшего, паразитирующего в мышцах.",
+  "function": "Подавление саркоцист, санация мышечной ткани.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Toxoplasma_HC",
+  "frequencies": "19665.89; 979.11",
+  "description": "Нозод высокой концентрации Toxoplasma gondii (человеческий штамм). Применяется при токсоплазмозе, часто протекающем латентно.",
+  "function": "Подавление токсоплазмы, санация тканевых цист.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Toxoplasmosis",
+  "frequencies": "434; 852",
+  "description": "Нозод токсоплазмоза — инфекции, передающейся при контакте с кошачьим litter или сырым мясом.",
+  "function": "Подавление Toxoplasma gondii.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Trichomonas",
+  "frequencies": "610; 692; 980",
+  "description": "Нозод Trichomonas — жгутикового простейшего, вызывающего вагинальные и урогенитальные инфекции с зудом и выделениями.",
+  "function": "Санация урогенитального тракта, подавление трихомонад.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Troglodytella_abrassari_HC",
+  "frequencies": "19068.45; 949.36; 20860.78; 1038.60",
+  "description": "Нозод высокой концентрации Troglodytella abrassarti — инфузории из кишечника приматов, изредка встречающейся у человека.",
+  "function": "Санация кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Trypanosoma_gambiense",
+  "frequencies": "255; 316; 403; 700; 724",
+  "description": "Нозод Trypanosoma gambiense — возбудителя африканской сонной болезни (западноафриканский тип).",
+  "function": "Подавление трипаносом, поддержка ЦНС.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Rotifer",
+  "frequencies": "4500",
+  "description": "Нозод коловратки — микроскопического многоклеточного организма, встречающегося в воде.",
+  "function": "Санация при контаминации.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Euglena",
+  "frequencies": "432; 3215; 3225; 3325; 6448",
+  "description": "Нозод эвглены — жгутикового простейшего, обитающего в пресной воде.",
+  "function": "Санация при контаминации эвгленами.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Helminthosporium",
+  "frequencies": "793; 969",
+  "description": "Нозод Helminthosporium — репродуктивного элемента некоторых паразитических червей.",
+  "function": "Подавление гельминтов на стадии яиц и личинок.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_ancylostoma_braziliense_HC",
+  "frequencies": "19964.61; 993.98",
+  "description": "Нозод высокой концентрации Ancylostoma braziliense — собачьего и кошачьего анкилостома, личинки которого вызывают кожную мигрирующую личинку (creeping eruption).",
+  "function": "Подавление анкилостом, санация кожи и кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_ancylostoma_canimum_HC",
+  "frequencies": "19914.83; 991.50; 19566.32; 974.15; 19217.81; 956.80",
+  "description": "Нозод высокой концентрации Ancylostoma caninum — собачьего анкилостома, опасного для человека.",
+  "function": "Подавление анкилостом, санация кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_ascaris",
+  "frequencies": "152; 442; 8146; 751; 1146; 797",
+  "description": "Нозод аскариды (Ascaris lumbricoides) — крупного круглого червя, паразитирующего в кишечнике. Может мигрировать в лёгкие.",
+  "function": "Подавление аскарид, изгнание гельминтов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_ascaris_HC",
+  "frequencies": "20313.12; 1011.33",
+  "description": "Нозод высокой концентрации аскариды (личинки в лёгких).",
+  "function": "Санация лёгочной ткани при аскаридозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_ascaris_megalocephala_HC",
+  "frequencies": "20313.12; 1011.33",
+  "description": "Нозод высокой концентрации Ascaris megalocephala (конской аскариды).",
+  "function": "Подавление аскарид.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_capillaria_hepatica_HC",
+  "frequencies": "21308.87; 1060.91",
+  "description": "Нозод высокой концентрации Capillaria hepatica — печёночного капилляриоза.",
+  "function": "Санация печени при капилляриозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_clonorchis_sinensis_HC",
+  "frequencies": "21259.08; 1058.43",
+  "description": "Нозод высокой концентрации Clonorchis sinensis — китайского печёночного сосальщика.",
+  "function": "Подавление трематод в желчных путях.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_gastrothylax_elongatus_HC",
+  "frequencies": "22653.12; 1127.83",
+  "description": "Нозод высокой концентрации Gastrothylax elongatus — трематоды жвачных.",
+  "function": "Подавление трематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_general_1",
+  "frequencies": "4412; 2400; 2112; 1862; 1550; 800; 732; 728; 712; 688; 676; 644; 422; 128; 120",
+  "description": "Общий противопаразитарный набор №1. Применяется при подозрении на паразитарную инвазию без точной идентификации.",
+  "function": "Общая санация от паразитов, поддержка ЖКТ и иммунитета.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_general_2",
+  "frequencies": "10000; 3176; 1998; 1865; 1840; 880; 800; 780; 770; 740; 728; 727; 690; 665; 660; 465; 444; 440; 125; 120; 95; 80; 72; 47",
+  "description": "Общий противопаразитарный набор №2. Расширенный спектр частот для хронических случаев.",
+  "function": "Комплексная противопаразитарная санация.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_general_alternative_v",
+  "frequencies": "4122; 1522; 967; 942; 854; 829; 827; 749; 741; 732; 633; 605; 604; 591; 524; 422; 411; 344; 172; 102",
+  "description": "Альтернативный общий противопаразитарный набор.",
+  "function": "Противопаразитарная санация при устойчивых случаях.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_general_comprehensive",
+  "frequencies": "10000; 5000; 4412; 2720; 2400; 2112; 1864; 1550; 1360; 880; 854; 800; 784; 751; 732; 728; 712; 688; 651; 644; 524; 465; 442; 422; 334; 240; 152; 128; 125; 120; 112; 96; 72; 64; 20",
+  "description": "Расширенный общий противопаразитарный набор (comprehensive).",
+  "function": "Комплексное подавление паразитов всех типов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_general_short_set",
+  "frequencies": "20; 64; 72; 96; 112; 120; 152; 651; 732; 1360; 2720; 10000",
+  "description": "Короткий общий противопаразитарный набор для быстрого применения.",
+  "function": "Экспресс-санация от паразитов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_gen_custom2_TR",
+  "frequencies": "6578; 2000; 831; 2000; 2008; 2520; 689; 750; 880; 650; 187",
+  "description": "Пользовательский общий противопаразитарный набор (со sweep-режимом 2000→2008).",
+  "function": "Противопаразитарная санация с качанием частот.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_giardia",
+  "frequencies": "5768; 5429; 4334; 2163; 2018; 1442; 829; 812; 721; 407; 334",
+  "description": "Нозод Giardia lamblia (лямблии) — жгутикового простейшего, вызывающего лямблиоз с диареей и мальабсорбцией.",
+  "function": "Подавление лямблий, восстановление кишечного всасывания.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_giardia_lamblia_HC",
+  "frequencies": "21109.72; 1050.99",
+  "description": "Нозод высокой концентрации Giardia lamblia.",
+  "function": "Санация при лямблиозе высокой интенсивности.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_gyrodactylus_HC",
+  "frequencies": "18919.09; 941.93",
+  "description": "Нозод высокой концентрации Gyrodactylus — моногенетического сосальщика рыб.",
+  "function": "Подавление сосальщиков.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_haemonchus_contortus_HC",
+  "frequencies": "19566.32; 974.15",
+  "description": "Нозод высокой концентрации Haemonchus contortus — нематоды жвачных.",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_heartworms",
+  "frequencies": "543; 2322; 200; 535; 1077; 799; 728",
+  "description": "Нозод сердечных гельминтов (Dirofilaria immitis). Применяется при дирофиляриозе у животных и человека.",
+  "function": "Подавление дирофилярий, санация сердца и лёгких.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_helminthsporium",
+  "frequencies": "793; 969; 164; 5243",
+  "description": "Нозод яиц гельминтов (worm eggs). Применяется как дополнение к лечению гельминтозов.",
+  "function": "Подавление яиц и личинок гельминтов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_hookworm",
+  "frequencies": "6.8; 440; 2008; 6436; 5868",
+  "description": "Нозод анкилостомы (hookworm) — нематоды, внедряющейся через кожу и паразитирующей в кишечнике.",
+  "function": "Подавление анкилостом, санация кишечника и кожи.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_braziliensis",
+  "frequencies": "787",
+  "description": "Нозод Leishmania braziliensis — возбудителя кожно-слизистого лейшманиоза.",
+  "function": "Подавление лейшманий.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_braziliensis_HC",
+  "frequencies": "20064.19; 998.94",
+  "description": "Нозод высокой концентрации Leishmania braziliensis.",
+  "function": "Санация при лейшманиозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_donovani",
+  "frequencies": "525; 781",
+  "description": "Нозод Leishmania donovani — возбудителя висцерального лейшманиоза.",
+  "function": "Подавление лейшманий, санация внутренних органов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_donovani_HC",
+  "frequencies": "19914.83; 991.50",
+  "description": "Нозод высокой концентрации Leishmania donovani.",
+  "function": "Санация при висцеральном лейшманиозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_mexicana_HC",
+  "frequencies": "20014.40; 996.46",
+  "description": "Нозод высокой концентрации Leishmania mexicana — кожного лейшманиоза.",
+  "function": "Санация кожи при лейшманиозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_tropica",
+  "frequencies": "791",
+  "description": "Нозод Leishmania tropica — возбудителя кожного лейшманиоза Старого Света.",
+  "function": "Подавление лейшманий.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_leighmania_tropica_HC",
+  "frequencies": "20163.76; 1003.89",
+  "description": "Нозод высокой концентрации Leishmania tropica.",
+  "function": "Санация при кожном лейшманиозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_loa_loa_HC",
+  "frequencies": "17973.13; 894.83",
+  "description": "Нозод высокой концентрации Loa loa — глазного червя (африканской нематоды).",
+  "function": "Подавление Loa loa, санация тканей.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_macracanthorhynchus_HC",
+  "frequencies": "21906.31; 1090.65",
+  "description": "Нозод высокой концентрации Macracanthorhynchus — скребня (акантоцефала).",
+  "function": "Подавление скребней.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_metagonimus_Yokogawai_HC",
+  "frequencies": "21906.31; 1090.65",
+  "description": "Нозод высокой концентрации Metagonimus yokogawai — кишечного сосальщика.",
+  "function": "Подавление трематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_nematode",
+  "frequencies": "771",
+  "description": "Нозод нематод — общего класса круглых червей.",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_onchocerca_volvulus_HC",
+  "frequencies": "21906.31; 1090.65",
+  "description": "Нозод высокой концентрации Onchocerca volvulus — возбудителя онхоцеркоза («речной слепоты»), образует подкожные узлы.",
+  "function": "Подавление онхоцерк, санация подкожных узлов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_paragonimus_Westernanil_HC",
+  "frequencies": "22503.75; 1120.40; 22254.82; 1108.00",
+  "description": "Нозод высокой концентрации Paragonimus westermani — лёгочного сосальщика.",
+  "function": "Подавление трематод в лёгких.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_passalurus_ambiguus_HC",
+  "frequencies": "21956.10; 1093.13; 21756.95; 1083.21",
+  "description": "Нозод высокой концентрации Passalurus ambiguus — острицы кроликов.",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_roundworms_comp",
+  "frequencies": "7159; 5897; 4412; 4152; 3212; 2720; 2322; 1372; 1113; 1077; 1054; 942; 835; 827; 826; 822; 799; 776; 773; 772; 753; 752; 749; 746; 738; 732; 728; 722; 721; 698; 688; 650; 543; 541; 535; 422; 380; 332; 240; 200; 152; 128; 120; 112; 104; 101; 20",
+  "description": "Расширенный набор против круглых червей (roundworms).",
+  "function": "Подавление аскарид, остриц, власоглавов и других нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_roundworms_general_short_set",
+  "frequencies": "128; 152; 240; 422; 650; 688",
+  "description": "Короткий набор против круглых червей.",
+  "function": "Быстрая противопаразитарная санация.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_roundworms_flatworms_TR",
+  "frequencies": "6187.5; 6468.8; 5050",
+  "description": "Набор для хронических болей, вызванных круглыми и плоскими червями (40 мин на частоту).",
+  "function": "Подавление гельминтов при хронических болевых синдромах.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_scabies",
+  "frequencies": "920; 1436; 2871; 5742; 90; 94; 98; 102; 106; 110; 253; 693",
+  "description": "Нозод чесоточного клеща (Sarcoptes scabiei). Применяется при чесотке и фолликулярной чесотке животных.",
+  "function": "Уничтожение клещей, санация кожи.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_follicular_mange",
+  "frequencies": "253; 693; 701; 774",
+  "description": "Нозод фолликулярной чесотки — заразного дерматита, вызываемого клещами у животных.",
+  "function": "Подавление клещей в волосяных фолликулах.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_schistosoma_haematobium",
+  "frequencies": "847; 867; 635",
+  "description": "Нозод Schistosoma haematobium — кровяного сосальщика, поражающего мочевой пузырь.",
+  "function": "Подавление шистосом, санация мочевыводящих путей.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_schistosoma_haematobium_HC",
+  "frequencies": "23549.28; 1172.45",
+  "description": "Нозод высокой концентрации Schistosoma haematobium.",
+  "function": "Санация при шистосомозе мочеполовой системы.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_schistosoma_mansoni",
+  "frequencies": "329; 9889",
+  "description": "Нозод Schistosoma mansoni — кровяного сосальщика, вызывающего симптомы, идентичные гепатиту C.",
+  "function": "Подавление шистосом, поддержка печени.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_stephanurus_dentalus",
+  "frequencies": "22951.84; 1142.70",
+  "description": "Нозод Stephanurus dentalus (яйца) — почечного червя свиней.",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_strongyloides",
+  "frequencies": "332; 422; 721; 732; 749; 942; 3212; 4412",
+  "description": "Нозод стронгилоидов (threadworm) — круглых червей, вызывающих стронгилоидоз.",
+  "function": "Подавление стронгилоидов, санация кишечника и лёгких.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_strongyloides_HC",
+  "frequencies": "19914.83; 991.50",
+  "description": "Нозод высокой концентрации Strongyloides (филяриевидная личинка).",
+  "function": "Санация при стронгилоидозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_strongyloides_secondary",
+  "frequencies": "380; 698; 752; 776; 722; 738; 746; 1113",
+  "description": "Дополнительный набор при стронгилоидозе.",
+  "function": "Комплексная санация при затяжном стронгилоидозе.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_tapeworms",
+  "frequencies": "164; 187; 453; 523; 542; 623; 843; 854; 1223; 803; 1360; 3032; 5522",
+  "description": "Нозод ленточных червей (tapeworms). Применяется при тениозе, тениаринхозе, дифиллоботриозе.",
+  "function": "Подавление ленточных червей, изгнание гельминтов.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_tapeworms_echinococciun",
+  "frequencies": "164; 453; 542; 623; 5522",
+  "description": "Нозод эхинококка — ленточного червя, распространённого у собак, волков, кошек и грызунов.",
+  "function": "Подавление эхинококка, санация кист.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_tapeworms_secondary",
+  "frequencies": "142; 187; 624; 662",
+  "description": "Дополнительный набор при ленточных червях.",
+  "function": "Усиление противопаразитарного эффекта.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trichinella_spiralis_HC",
+  "frequencies": "20138.87; 1002.66",
+  "description": "Нозод высокой концентрации Trichinella spiralis — возбудителя трихинеллёза, обитающего в мышцах.",
+  "function": "Подавление трихинелл, санация мышечной ткани.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trichinosis",
+  "frequencies": "101; 541; 822; 1054; 1372",
+  "description": "Нозод трихинеллёза — инфекции, передающейся с плохо проваренным мясом.",
+  "function": "Подавление Trichinella spiralis.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trichomonas_vaginalis_HC",
+  "frequencies": "18968.87; 944.40",
+  "description": "Нозод высокой концентрации Trichomonas vaginalis — возбудителя урогенитального трихомониаза.",
+  "function": "Санация урогенитального тракта.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trichuris_sp_HC",
+  "frequencies": "20213.55; 1006.37",
+  "description": "Нозод высокой концентрации Trichuris (власоглав).",
+  "function": "Подавление власоглава, санация кишечника.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_turbatrix",
+  "frequencies": "104",
+  "description": "Нозод Turbatrix — нематоды (уксусной угрицы).",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Turbatrix",
+  "frequencies": "104",
+  "description": "Нозод уксусной угрицы (Turbatrix aceti).",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_brucel_HC",
+  "frequencies": "21358.65; 1063.38",
+  "description": "Нозод высокой концентрации Trypanosoma brucei — возбудителя африканского трипаносомоза.",
+  "function": "Подавление трипаносом, поддержка ЦНС.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_cruzi_HC",
+  "frequencies": "23051.41; 1147.66",
+  "description": "Нозод высокой концентрации Trypanosoma cruzi (из ткани мозга) — возбудителя болезни Шагаса.",
+  "function": "Подавление трипаносом, санация ЦНС и миокарда.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_equiperdum_HC",
+  "frequencies": "22055.67; 1098.09; 22005.88; 1095.61; 21707.16; 1080.74",
+  "description": "Нозод высокой концентрации Trypanosoma equiperdum — возбудителя случной болезни лошадей.",
+  "function": "Подавление трипаносом.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_gambiense_HC",
+  "frequencies": "19715.68; 981.59",
+  "description": "Нозод высокой концентрации Trypanosoma gambiense.",
+  "function": "Санация при сонной болезни.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_lewisi_HC",
+  "frequencies": "21159.50; 1053.47",
+  "description": "Нозод высокой концентрации Trypanosoma lewisi (мазок крови) — трипаносомы крыс.",
+  "function": "Подавление трипаносом.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_trypanosoma_rhodesiense_TR",
+  "frequencies": "21209.29; 1055.95",
+  "description": "Нозод Trypanosoma rhodesiense — восточноафриканского трипаносомоза.",
+  "function": "Подавление трипаносом.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_uracleidus_HC",
+  "frequencies": "22254.82; 1108.00",
+  "description": "Нозод высокой концентрации Uracleidus — паразитической нематоды.",
+  "function": "Подавление нематод.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_general_short_set",
+  "frequencies": "524; 854; 651",
+  "description": "Короткий набор против сосальщиков (flukes).",
+  "function": "Экспресс-санация при трематодозах.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_intestinal",
+  "frequencies": "524; 651; 676; 844; 848; 854; 2128; 2008; 2084; 2150; 6766",
+  "description": "Нозод кишечных сосальщиков.",
+  "function": "Подавление трематод в кишечнике.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_liver",
+  "frequencies": "143; 275; 676; 763; 238; 6641; 6672",
+  "description": "Нозод печёночных сосальщиков.",
+  "function": "Подавление трематод в печени и желчных путях.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_lymph",
+  "frequencies": "10050; 157",
+  "description": "Нозод лимфатических сосальщиков.",
+  "function": "Санация лимфатической системы.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_pancreatic_1",
+  "frequencies": "1850; 2000; 2003; 2008; 2013; 2050; 2080; 6578",
+  "description": "Нозод панкреатических сосальщиков.",
+  "function": "Санация поджелудочной железы.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Parasites_flukes_sheep_liver",
+  "frequencies": "826; 830; 834",
+  "description": "Нозод печёночного сосальщика овец (Fasciola hepatica).",
+  "function": "Подавление фасциолы, санация печени.",
+  "category": "parasitic",
+  "source": "CALF"
+},
+{
+  "name": "Silver",
+  "frequencies": "15903",
+  "description": "Гомеопатическое средство на основе коллоидного серебра. Обладает антисептическим и противомикробным действием.",
+  "function": "Подавление бактериальной и грибковой микрофлоры, поддержка при инфекциях.",
+  "category": "mineral",
+  "source": "CALF"
+},
+{
+  "name": "Vitamag_complete_set",
+  "frequencies": "1; 2; 3; 4; 5; 6; 7; 7.8; 9; 10; 13; 16; 19.5; 22.5; 24",
+  "description": "Полный набор частот «Витамин+магний». Применяется для восполнения дефицита витаминов и магния, поддержки обмена веществ.",
+  "function": "Нормализация витаминно-минерального баланса, поддержка нервной и мышечной систем.",
+  "category": "vitamin",
+  "source": "CALF"
+},
+{
+  "name": "L_lysine",
+  "frequencies": "195.5; 391; 782; 1564.1; 3128.2; 6256.4",
+  "description": "Нозод L-лизина — незаменимой аминокислоты, необходимой для синтеза коллагена, усвоения кальция и противовирусной защиты.",
+  "function": "Стимуляция синтеза коллагена, поддержка иммунитета (особенно при герпесвирусах).",
+  "category": "other",
+  "source": "CALF"
+},
+{
+  "name": "Interleukin",
+  "frequencies": "3448; 2929; 4014; 5611; 2867; 2855; 2791",
+  "description": "Нозод интерлейкина — цитокина, регулирующего иммунный ответ. Применяется для стимуляции продукции лимфоцитов.",
+  "function": "Стимуляция лимфопоэза и клеточного иммунитета.",
+  "category": "other",
+  "source": "CALF"
+},
+{
+  "name": "Electrolyte_levels",
+  "frequencies": "8.1; 20; 10000",
+  "description": "Частотный набор для улучшения электролитного баланса в организме.",
+  "function": "Нормализация уровня электролитов (Na⁺, K⁺, Cl⁻, Ca²⁺, Mg²⁺).",
+  "category": "mineral",
+  "source": "CALF"
+},
+{
+  "name": "Blue_cohosh",
+  "frequencies": "364",
+  "description": "Гомеопатическое средство из растения Caulophyllum thalictroides (стеблелист). Применяется при нарушениях менструального цикла, мышечных и суставных болях.",
+  "function": "Регуляция менструального цикла, снятие мышечных спазмов.",
+  "category": "plant",
+  "source": "CALF"
+},
+{
+  "name": "Pennyroyal",
+  "frequencies": "772",
+  "description": "Гомеопатическое средство из растения Mentha pulegium (болотная мята). Применяется при расстройствах ЖКТ, менструальных нарушениях.",
+  "function": "Спазмолитическое, ветрогонное и мягкое стимулирующее действие.",
+  "category": "plant",
+  "source": "CALF"
+},
+{
+  "name": "Influencinum_Berlin_55",
+  "frequencies": "430; 720; 733; 787",
+  "description": "Гриппозный нозод, приготовленный из штамма гриппа «Берлин-55». Применяется для профилактики и лечения гриппа, вызванного этим штаммом.",
+  "function": "Специфическая десенсибилизация и противовирусное действие.",
+  "category": "viral",
+  "source": "CALF"
+},
+{
+  "name": "Influencinum_vesic_NW",
+  "frequencies": "332; 364; 519; 588; 590; 238; 239; 715",
+  "description": "Гриппозный нозод везикулярного типа (северо-западный штамм). Применяется при гриппозных состояниях с кожными проявлениями.",
+  "function": "Противовирусное действие при гриппе с пузырьковыми высыпаниями.",
+  "category": "viral",
+  "source": "CALF"
+},
+{
+  "name": "Influencinum_vesic_SW",
+  "frequencies": "433; 645; 658; 824",
+  "description": "Гриппозный нозод везикулярного типа (юго-западный штамм). Применяется при гриппе с кожными проявлениями.",
+  "function": "Противовирусное действие при гриппе с пузырьковыми высыпаниями.",
+  "category": "viral",
+  "source": "CALF"
+},
+{
+  "name": "Influencinum_vesica_general",
+  "frequencies": "203; 292; 588; 612; 975; 407; 682",
+  "description": "Общий нозод гриппа с пузырьковыми проявлениями (blisters). Применяется при гриппозных состояниях, сопровождающихся везикулами.",
+  "function": "Противовирусное и десенсибилизирующее действие.",
+  "category": "viral",
+  "source": "CALF"
+},
+{
+  "name": "Mycogone_fungoides",
+  "frequencies": "488; 532; 662; 764; 852; 1444",
+  "description": "Нозод грибка Mycogone fungoides — возбудителя микоза, напоминающего экзему. Применяется при грибковых поражениях кожи.",
+  "function": "Подавление грибковой флоры, санация кожи.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Myocarditis_narbe",
+  "frequencies": "279; 761",
+  "description": "Нозод рубцовой ткани миокарда (narbe — рубец). Применяется при постинфарктных состояниях и кардиосклерозе.",
+  "function": "Поддержка миокарда, рассасывание рубцовой ткани.",
+  "category": "nosode",
+  "source": "CALF"
+},
+{
+  "name": "Phoma_Destructiva",
+  "frequencies": "163; 815; 621",
+  "description": "Гомеопатический нозод грибка Phoma destructiva — патогенного грибка растений, применяемого как аллерген.",
+  "function": "Десенсибилизация при грибковой аллергии, подавление грибковой флоры.",
+  "category": "homeopathic",
+  "source": "CALF"
+},
+{
+  "name": "Pullularia_pullulans",
+  "frequencies": "432; 873; 1364; 684; 739; 750",
+  "description": "Противоаллергический нозод грибка Pullularia pullulans (чёрные дрожжи). Применяется при аллергии на плесень.",
+  "function": "Десенсибилизация при аллергии на плесневые грибки.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Sanguis_menst",
+  "frequencies": "591",
+  "description": "Нозод менструальной крови. Применяется при эндометриозе, дисменорее и гормональных нарушениях.",
+  "function": "Регуляция менструального цикла, гормональная поддержка.",
+  "category": "nosode",
+  "source": "CALF"
+},
+{
+  "name": "Semperillium",
+  "frequencies": "1140",
+  "description": "Гомеопатическое средство из растения Sempervivum (молодило). Применяется при герпесе, кожных и слизистых поражениях.",
+  "function": "Противовирусное и заживляющее действие.",
+  "category": "homeopathic",
+  "source": "CALF"
+},
+{
+  "name": "Smegma",
+  "frequencies": "153; 180; 638",
+  "description": "Нозод смегмы — секрета крайней плоти. Применяется при баланопостите, уретрите и хронических воспалениях мочеполовой сферы.",
+  "function": "Санация урогенитального тракта, устранение хронического воспаления.",
+  "category": "nosode",
+  "source": "CALF"
+},
+{
+  "name": "Tuberculinum",
+  "frequencies": "332; 522; 664; 731; 737; 748; 1085; 1099; 1700; 761",
+  "description": "Туберкулиновый нозод — препарат из культуральной среды Mycobacterium tuberculosis (отличается от Bacillinum, приготовленного из тканей). Применяется при туберкулёзном миазме.",
+  "function": "Активация иммунного ответа при туберкулёзном миазме, хронических инфекциях.",
+  "category": "nosode",
+  "source": "CALF"
+},
+{
+  "name": "Agyfla_HC",
+  "frequencies": "3534.88; 175.99",
+  "description": "Нозод высокой концентрации Agyfla (точное происхождение в CAFL не раскрыто). Применяется как редкий специфический нозод.",
+  "function": "Специфическая санация по показаниям.",
+  "category": "nosode",
+  "source": "CALF"
+},
+{
+  "name": "Barley_smut",
+  "frequencies": "377; 224; 1447",
+  "description": "Гомеопатический аллерген из грибка головни, поражающего ячмень (Barley smut).",
+  "function": "Десенсибилизация при аллергии на плесневые грибки.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Corn_smut",
+  "frequencies": "546; 1642; 289",
+  "description": "Гомеопатический аллерген из грибка головни, поражающего кукурузу (Corn smut).",
+  "function": "Десенсибилизация при аллергии на плесень.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Oat_smut",
+  "frequencies": "806",
+  "description": "Гомеопатический аллерген из грибка головни, поражающего овёс (Oat smut).",
+  "function": "Десенсибилизация при аллергии на плесневые грибки.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Wheat_smut",
+  "frequencies": "10163; 156; 375",
+  "description": "Гомеопатический аллерген из грибка головни, поражающего пшеницу (Wheat smut).",
+  "function": "Десенсибилизация при аллергии на плесень.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Sorghum_syrup_HC",
+  "frequencies": "13791.02; 686.61",
+  "description": "Нозод высокой концентрации из сиропа сорго — продукта, содержащего микотоксины. Применяется при пищевой непереносимости и микотоксикозах.",
+  "function": "Связывание и выведение микотоксинов, десенсибилизация.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Zearalenone_HC",
+  "frequencies": "4978.71; 247.88",
+  "description": "Нозод высокой концентрации зеараленона — микотоксина, продуцируемого грибами Fusarium. Обладает эстрогеноподобным действием.",
+  "function": "Связывание и выведение микотоксинов, нормализация гормонального фона.",
+  "category": "fungal",
+  "source": "CALF"
+},
+{
+  "name": "Serum_schweinepest",
+  "frequencies": "503; 246; 604; 465",
+  "description": "Нозод сыворотки против чумы свиней (hog cholera) — вирусного заболевания, поражающего свиней.",
+  "function": "Противовирусное действие, десенсибилизация при вакцинальных реакциях.",
+  "category": "nosode",
+  "source": "CALF"
+}
   ]
 }
