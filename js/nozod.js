@@ -1,5 +1,6 @@
 /* ============================================================
    nozod.js — вкладка «Нозод»: аккордеон + воспроизведение + WAV
+   Стерео: левый канал sin(ωt), правый cos(ωt) — сдвиг 90°.
    ============================================================ */
 (function () {
     'use strict';
@@ -13,7 +14,9 @@
     let nozodData = null;
     let audioCtx = null;
     let activeOscillators = [];
+    let activeDelays = [];
     let activeMasterGain = null;
+    let activeMerger = null;
     let currentlyPlayingBtn = null;
 
     /* ---------- Утилиты ---------- */
@@ -187,14 +190,14 @@
                             ${func ? `<div class="small mt-1"><strong>Функция:</strong> ${escapeHtml(func)}</div>` : ''}
                         </div>
                         <div class="d-flex flex-column gap-1 flex-shrink-0">
-                            <button class="btn btn-sm btn-outline-success nozod-play-btn" title="Воспроизвести"
+                            <button class="btn btn-sm btn-outline-success nozod-play-btn" title="Воспроизвести (стерео, сдвиг 90°)"
                                     data-action="play"
                                     data-name="${escapeHtml(name)}"
                                     data-freqs="${escapeHtml(freqsStr)}"
                                     ${disabled}>
                                 <i class="bi bi-play-fill"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-primary nozod-save-btn" title="Сохранить WAV"
+                            <button class="btn btn-sm btn-outline-primary nozod-save-btn" title="Сохранить WAV (стерео, 48 кГц, 32 бит)"
                                     data-action="save"
                                     data-name="${escapeHtml(name)}"
                                     data-source="${escapeHtml(source)}"
@@ -231,7 +234,7 @@
         } else {
             btn.classList.remove('btn-danger');
             btn.classList.add('btn-outline-success');
-            btn.title = 'Воспроизвести';
+            btn.title = 'Воспроизвести (стерео, сдвиг 90°)';
             icon.className = 'bi bi-play-fill';
         }
     }
@@ -242,6 +245,16 @@
             try { o.disconnect(); } catch (e) { /* ignore */ }
         }
         activeOscillators = [];
+
+        for (const d of activeDelays) {
+            try { d.disconnect(); } catch (e) { /* ignore */ }
+        }
+        activeDelays = [];
+
+        if (activeMerger) {
+            try { activeMerger.disconnect(); } catch (e) { /* ignore */ }
+            activeMerger = null;
+        }
         if (activeMasterGain) {
             try { activeMasterGain.disconnect(); } catch (e) { /* ignore */ }
             activeMasterGain = null;
@@ -252,37 +265,63 @@
         }
     }
 
+    /**
+     * Стерео-воспроизведение с фазовым сдвигом 90° между каналами.
+     * Для каждой частоты:
+     *   правый канал = sin(ωt)               (напрямую)
+     *   левый  канал = sin(ωt − π/2)         (через DelayNode на T/4)
+     * Итог: правый канал опережает левый на 90°.
+     * Абсолютная задержка разная для каждой частоты, но относительный
+     * фазовый сдвиг одинаков — ровно 90° на каждой из них.
+     */
     function playFrequencies(freqs, btn) {
         stopAll();
         if (!freqs.length) return;
         const ctx = ensureAudioCtx();
 
+        // Мастер-гейн (нормируем амплитуду, чтобы не было клиппинга)
         const master = ctx.createGain();
-        const amp = 0.5 / freqs.length;
-        master.gain.value = amp;
+        master.gain.value = 0.5 / freqs.length;
         master.connect(ctx.destination);
         activeMasterGain = master;
+
+        // Мерджер: input 0 → левый канал, input 1 → правый канал
+        const merger = ctx.createChannelMerger(CHANNELS);
+        merger.connect(master);
+        activeMerger = merger;
 
         for (const f of freqs) {
             const osc = ctx.createOscillator();
             osc.type = 'sine';
             osc.frequency.value = f;
-            osc.connect(master);
+
+            // Правый канал — прямой сигнал
+            osc.connect(merger, 0, 1);
+
+            // Левый канал — через задержку T/4 (90°)
+            const delayL = ctx.createDelay(1.0);
+            // Ограничим минимальным разумным значением, чтобы не уйти в 0
+            const quarterPeriod = 1 / (4 * f);
+            delayL.delayTime.value = Math.max(quarterPeriod, 0.00001);
+            osc.connect(delayL);
+            delayL.connect(merger, 0, 0);
+
             osc.start();
             activeOscillators.push(osc);
+            activeDelays.push(delayL);
         }
 
         currentlyPlayingBtn = btn || null;
         setPlayButtonState(btn, true);
     }
 
-    /* ---------- Генерация WAV (32-bit PCM, stereo, 48 kHz) ---------- */
+    /* ---------- Генерация WAV (32-bit PCM, stereo, 48 kHz, 90°) ---------- */
 
     function generateWavBlob(freqs, durationSec) {
         const numChannels = CHANNELS;
         const bytesPerSample = BITS / 8;
         const blockAlign = numChannels * bytesPerSample;
-        const byteRate = SAMPLE_RATE * blockAlign;
+        const byteRate = SAMPLE_RATE * blockAlign;   // 48000 * 8 = 384000 Б/с = 3072 кбит/с
         const numSamples = Math.max(1, Math.floor(durationSec * SAMPLE_RATE));
         const dataLength = numSamples * numChannels;
         const dataSize = dataLength * bytesPerSample;
@@ -315,23 +354,41 @@
 
         const amp = 0.9 / Math.max(1, freqs.length);
         const twoPi = 2 * Math.PI;
-        const fadeSamples = Math.min(Math.floor(SAMPLE_RATE * 0.02), Math.floor(numSamples / 2));
+        const halfPi = Math.PI / 2;
+        const fadeSamples = Math.min(
+            Math.floor(SAMPLE_RATE * 0.02),
+            Math.floor(numSamples / 2)
+        );
 
         for (let i = 0; i < numSamples; i++) {
             const t = i / SAMPLE_RATE;
-            let s = 0;
+            let left = 0;
+            let right = 0;
             for (let k = 0; k < freqs.length; k++) {
-                s += Math.sin(twoPi * freqs[k] * t);
+                const phase = twoPi * freqs[k] * t;
+                left  += Math.sin(phase);                 // sin(ωt)
+                right += Math.sin(phase + halfPi);        // sin(ωt + π/2) = cos(ωt)
             }
-            s *= amp;
+            left  *= amp;
+            right *= amp;
 
-            if (i < fadeSamples) s *= i / fadeSamples;
-            else if (i > numSamples - fadeSamples) s *= (numSamples - i) / fadeSamples;
+            // Плавное появление / затухание (общий множитель для обоих каналов)
+            if (i < fadeSamples) {
+                const k = i / fadeSamples;
+                left *= k;
+                right *= k;
+            } else if (i > numSamples - fadeSamples) {
+                const k = (numSamples - i) / fadeSamples;
+                left *= k;
+                right *= k;
+            }
 
-            if (s > 1) s = 1; else if (s < -1) s = -1;
-            const intVal = Math.round(s * 2147483647);
-            writeI32(intVal);
-            writeI32(intVal); // правый канал = левый
+            // Мягкий клиппинг
+            if (left  >  1) left  =  1; else if (left  < -1) left  = -1;
+            if (right >  1) right =  1; else if (right < -1) right = -1;
+
+            writeI32(Math.round(left  * 2147483647));
+            writeI32(Math.round(right * 2147483647));
         }
 
         return new Blob([buffer], { type: 'audio/wav' });
@@ -386,7 +443,7 @@
                 fileHandle = await window.showSaveFilePicker({
                     suggestedName: fileName,
                     types: [{
-                        description: 'WAV audio',
+                        description: 'WAV audio (stereo, 48 kHz, 32-bit, 90° phase)',
                         accept: { 'audio/wav': ['.wav'] }
                     }]
                 });
@@ -407,9 +464,9 @@
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
         }
 
-        showToast(`Генерация WAV (${duration} с)…`, 'info');
+        showToast(`Генерация WAV (${duration} с, стерео 90°)…`, 'info');
 
-        // Небольшая пауза, чтобы UI успел отрисовать спиннер
+        // Пауза, чтобы UI успел перерисоваться
         await new Promise(r => setTimeout(r, 50));
 
         try {
@@ -454,7 +511,6 @@
 
         if (action === 'play') {
             e.preventDefault();
-            // Повторный клик — стоп
             if (currentlyPlayingBtn === btn) {
                 stopAll();
                 return;
