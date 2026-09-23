@@ -26,7 +26,6 @@ class AppStorage {
     return Object.keys(localStorage).filter(key => key.startsWith(this.prefix));
   }
   
-  // Міграція старих даних без префікса
   migrateIfNeeded() {
     const oldData = localStorage.getItem('atlas_ledneva_data');
     const oldHistory = localStorage.getItem('atlas_history');
@@ -52,7 +51,6 @@ class AppStorage {
     return migrated;
   }
   
-  // Завантаження даних атласу
   loadAtlasData() {
     const stored = this.getItem('atlas_data');
     if (stored) {
@@ -66,12 +64,10 @@ class AppStorage {
     return [];
   }
   
-  // Збереження даних атласу
   saveAtlasData(data) {
     this.setItem('atlas_data', JSON.stringify(data));
   }
   
-  // Завантаження історії
   loadHistory() {
     const stored = this.getItem('atlas_history');
     if (stored) {
@@ -98,19 +94,15 @@ class AppStorage {
     return { users: [], records: [] };
   }
   
-  // Збереження історії
   saveHistory(history) {
     this.setItem('atlas_history', JSON.stringify(history));
   }
 }
 
-// Глобальний екземпляр для доступу з консолі
 window.appStorage = new AppStorage();
 
-// Версія додатку (синхронізувати з service-worker.js)
 const APP_VERSION = "1.1.5";
 
-// Глобальные переменные
 let pathologiesData = [];
 let pathologyAccordion = document.getElementById('pathologyAccordion');
 let pointModal = new bootstrap.Modal(document.getElementById('pointModal'));
@@ -120,7 +112,7 @@ let currentEditIndex = -1;
 let currentPage = 'main';
 let navbarCollapse = document.getElementById('navbarNav');
 
-// ========== ОНОВЛЕНІ ФУНКЦІЇ ДЛЯ РОБОТИ З LOCALSTORAGE ==========
+// ========== РОБОТА З LOCALSTORAGE ==========
 function saveToLocalStorage() {
     appStorage.saveAtlasData(pathologiesData);
 }
@@ -164,7 +156,7 @@ function showToast(message) {
     }, 3000);
 }
 
-// ========== ЗМІНЕНА ФУНКЦІЯ loadData ==========
+// ========== ЗАВАНТАЖЕННЯ ДАНИХ ==========
 async function loadData() {
     console.log('=== ІНІЦІАЛІЗАЦІЯ АТЛАСУ ===');
     console.log('Префікс додатку:', appStorage.prefix);
@@ -261,7 +253,7 @@ async function loadData() {
     showPage('main');
 }
 
-// ========== ВСІ ІНШІ ФУНКЦІЇ ==========
+// ========== ІНШІ ФУНКЦІЇ ==========
 function afterDataChange() {
     renderAccordion();
     fillPathologyDatalist();
@@ -484,6 +476,78 @@ function renderAccordion() {
     });
 }
 
+// ========== ЗБЕРЕЖЕННЯ ПОКАЗАНЬ З МОДАЛЬНОГО ВІКНА ==========
+function handleSaveMeasurement(pathology, point, checkBtn) {
+    let currentActive = getActiveUser();
+    
+    if (!currentActive) {
+        const name = prompt('Введите ваше имя для добавления в историю:');
+        if (!name || name.trim() === '') return;
+        const newUser = addUser(name.trim());
+        if (newUser) {
+            currentActive = newUser;
+            alert(`Здравствуй, ${newUser.name}! Теперь ты активный пользователь.`);
+        } else {
+            return;
+        }
+    }
+    
+    const elediyaInput = document.getElementById('modalElediyaInput');
+    const folInput = document.getElementById('modalFolInput');
+    const elediyaVal = elediyaInput?.value.trim() || '';
+    const folVal = folInput?.value.trim() || '';
+    const hasMeasurements = elediyaVal !== '' || folVal !== '';
+    
+    const measurements = {
+        elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
+        fol: folVal !== '' ? parseFloat(folVal) : null,
+        saved: hasMeasurements
+    };
+    
+    const oneHour = 60 * 60 * 1000;
+    const last = getLastRecordTime(point.name, pathology.name, currentActive.id);
+    const now = Date.now();
+    
+    if (last && (now - last) < oneHour) {
+        if (hasMeasurements) {
+            const history = loadHistory();
+            const matching = history.records.filter(r =>
+                r.userId === currentActive.id &&
+                r.pointName === point.name &&
+                r.pathologyName === pathology.name
+            ).sort((a, b) => b.timestamp - a.timestamp);
+            if (matching.length > 0) {
+                matching[0].measurements = measurements;
+                saveHistory(history);
+                alert('Показания обновлены');
+            }
+        } else {
+            alert('Эта точка уже была добавлена в течение последнего часа. Введите показания приборов для обновления.');
+        }
+        return;
+    }
+    
+    const newRecord = addRecord({
+        pointName: point.name,
+        pathologyName: pathology.name,
+        dispersion: point.dispersion
+    });
+    
+    if (newRecord) {
+        if (hasMeasurements) {
+            const history = loadHistory();
+            const rec = history.records.find(r => r.id === newRecord.id);
+            if (rec) {
+                rec.measurements = measurements;
+                saveHistory(history);
+            }
+        }
+        if (checkBtn) checkBtn.style.color = 'rgba(40, 167, 69, 1)';
+        alert(hasMeasurements ? 'Точка и показания добавлены в историю' : 'Точка добавлена в историю');
+    }
+}
+
+// ========== КАРТКА ТОЧКИ ==========
 function showPointCard(pathology, point) {
     const titleEl = document.getElementById('viewPointTitle');
     const dispEl = document.getElementById('viewDispersion');
@@ -546,6 +610,65 @@ function showPointCard(pathology, point) {
         }
     }
     
+    // ========== СЕКЦІЯ ПОКАЗАНЬ ПРИБОРІВ У МОДАЛЬНОМУ ВІКНІ ==========
+    const oldMeasurementSection = document.getElementById('modalMeasurementSection');
+    if (oldMeasurementSection) oldMeasurementSection.remove();
+    
+    const modalBody = document.querySelector('#viewPointModal .modal-body');
+    if (modalBody) {
+        const activeUser = getActiveUser();
+        const oneHour = 60 * 60 * 1000;
+        const now = Date.now();
+        let recentRecord = null;
+        
+        if (activeUser) {
+            const history = loadHistory();
+            const matching = history.records.filter(r =>
+                r.userId === activeUser.id &&
+                r.pointName === point.name &&
+                r.pathologyName === pathology.name
+            ).sort((a, b) => b.timestamp - a.timestamp);
+            if (matching.length > 0 && (now - matching[0].timestamp) < oneHour) {
+                recentRecord = matching[0];
+            }
+        }
+        
+        const savedElediya = recentRecord?.measurements?.elediya ?? '';
+        const savedFol = recentRecord?.measurements?.fol ?? '';
+        
+        const measurementSection = document.createElement('div');
+        measurementSection.id = 'modalMeasurementSection';
+        measurementSection.className = 'mt-3 p-2 border rounded';
+        measurementSection.style.background = '#f8f9fa';
+        
+        const hint = recentRecord
+            ? 'Запись за последний час существует — можно обновить показания.'
+            : 'Введите значения и нажмите ✓ на фото (или кнопку «Записать»).';
+        
+        measurementSection.innerHTML = `
+            <strong>Показания приборов:</strong>
+            <div class="d-flex gap-2 mt-2">
+                <input type="number" class="form-control form-control-sm" id="modalElediyaInput" placeholder="эледия" value="${savedElediya}">
+                <input type="number" class="form-control form-control-sm" id="modalFolInput" placeholder="фоль" value="${savedFol}">
+            </div>
+            <button class="btn btn-sm btn-success mt-2 w-100" id="modalSaveMeasurementBtn">
+                <i class="bi bi-check-circle"></i> Записать
+            </button>
+            <small class="text-muted d-block mt-1">${hint}</small>
+        `;
+        modalBody.appendChild(measurementSection);
+        
+        const saveBtn = document.getElementById('modalSaveMeasurementBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                handleSaveMeasurement(pathology, point, null);
+            });
+        }
+    }
+    
+    // ========== ГАЛОЧКА НА ФОТО ==========
     const oldCheck = document.getElementById('pointCheckButton');
     if (oldCheck) oldCheck.remove();
     
@@ -585,38 +708,7 @@ function showPointCard(pathology, point) {
         checkBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
-            
-            let currentActive = getActiveUser();
-            
-            if (!currentActive) {
-                const name = prompt('Введите ваше имя для добавления в историю:');
-                if (!name || name.trim() === '') return;
-                const newUser = addUser(name.trim());
-                if (newUser) {
-                    currentActive = newUser;
-                    alert(`Здравствуй, ${newUser.name}! Теперь ты активный пользователь.`);
-                } else {
-                    return;
-                }
-            }
-            
-            const last = getLastRecordTime(point.name, pathology.name, currentActive.id);
-            const now = Date.now();
-            if (last && (now - last) < oneHour) {
-                alert('Эта точка уже была добавлена в течение последнего часа. Попробуйте позже.');
-                return;
-            }
-            
-            const newRecord = addRecord({
-                pointName: point.name,
-                pathologyName: pathology.name,
-                dispersion: point.dispersion
-            });
-            
-            if (newRecord) {
-                checkBtn.style.color = 'rgba(40, 167, 69, 1)';
-                alert('Точка добавлена в историю');
-            }
+            handleSaveMeasurement(pathology, point, checkBtn);
         });
         
         const pointCarousel = document.getElementById('pointCarousel');
@@ -671,6 +763,11 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
     const editPathologyEl = document.getElementById('editPathology');
     const editIndexEl = document.getElementById('editIndex');
 
+    console.log('[savePointBtn] Сохраняем точку:');
+    console.log('  Патология:', JSON.stringify(pathologyInput));
+    console.log('  Название точки:', JSON.stringify(pointName));
+    console.log('  Расположение:', JSON.stringify(dispersion));
+
     if (!pathologyInput || !pointName || !dispersion) {
         alert('Заполните обязательные поля');
         return;
@@ -697,6 +794,7 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
                 if (!newPathology) {
                     newPathology = { name: pathologyInput, links: [], point: [] };
                     pathologiesData.push(newPathology);
+                    console.log('[savePointBtn] Создана новая патология:', pathologyInput);
                 }
                 newPathology.point.push(newPoint);
             }
@@ -706,11 +804,16 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
         if (!pathology) {
             pathology = { name: pathologyInput, links: [], point: [] };
             pathologiesData.push(pathology);
+            console.log('[savePointBtn] Создана новая патология:', pathologyInput);
+        } else {
+            console.log('[savePointBtn] Найдена существующая патология:', pathology.name);
         }
         pathology.point.push(newPoint);
     }
 
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
+    console.log('[savePointBtn] Все патологии после сохранения:', pathologiesData.map(p => p.name));
+    
     afterDataChange();
     pointModal.hide();
 });
@@ -720,7 +823,6 @@ function isValidImageUrl(str) {
     if (!str || typeof str !== 'string') return false;
     const trimmed = str.trim();
     if (trimmed === '') return false;
-    // Перевіряємо наявність ознак URL
     return trimmed.includes('/') || 
            trimmed.includes('http') || 
            trimmed.includes('.jpg') || 
@@ -744,7 +846,7 @@ function areImagesEqual(images1, images2) {
     return JSON.stringify(sorted1) === JSON.stringify(sorted2);
 }
 
-// ========== ВИПРАВЛЕНИЙ ЕКСПОРТ ==========
+// ========== ЕКСПОРТ ==========
 document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     try {
         let totalPoints = 0;
@@ -774,7 +876,6 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
             pathology.point.forEach(point => {
                 let images = '';
                 if (point.images && Array.isArray(point.images)) {
-                    // Експортуємо тільки валідні посилання
                     const validImages = point.images.filter(img => isValidImageUrl(img));
                     images = validImages.join(';');
                 }
@@ -812,7 +913,7 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     }
 });
 
-// ========== ВИПРАВЛЕНИЙ ІМПОРТ ==========
+// ========== ІМПОРТ ==========
 document.getElementById('btn-import-csv')?.addEventListener('click', () => {
     document.getElementById('import-file')?.click();
 });
@@ -826,7 +927,6 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
         const text = e.target.result;
         const cleanText = text.replace(/^\uFEFF/, '');
         
-        // Парсинг CSV
         const rows = [];
         let currentRow = [];
         let currentCell = '';
@@ -901,7 +1001,6 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                 continue;
             }
             
-            // Обробка зображень - фільтруємо тільки валідні посилання
             let newImages = [];
             if (imagesStr) {
                 let rawImages = [];
@@ -912,11 +1011,9 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                 } else {
                     rawImages = [imagesStr];
                 }
-                // Фільтруємо тільки валідні посилання
                 newImages = rawImages.map(s => s.trim()).filter(img => isValidImageUrl(img));
             }
             
-            // Шукаємо патологію
             let pathology = pathologiesData.find(p => p.name === pathologyName);
             
             if (!pathology) {
@@ -925,57 +1022,42 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                 addedCount++;
             }
             
-            // Шукаємо точку
             const existingPoint = pathology.point.find(p => p.name === pointName);
             
             if (existingPoint) {
                 let needsUpdate = false;
                 let changes = [];
                 
-                // Оновлення опису
                 if (description && description.length > 0) {
                     const currentDesc = existingPoint.description || '';
-                    // Оновлюємо, якщо поточний опис порожній або дуже короткий
                     if (currentDesc === '' || (description.length > currentDesc.length && currentDesc.length < 10)) {
                         existingPoint.description = description;
                         needsUpdate = true;
                         changes.push('опис');
-                        console.log(`Оновлено опис для ${pointName}`);
                     }
                 }
                 
-                // Оновлення розташування
                 if (dispersion && dispersion.length > 0) {
                     const currentDisp = existingPoint.dispersion || '';
                     if (currentDisp === '' || (dispersion.length > currentDisp.length && currentDisp.length < 10)) {
                         existingPoint.dispersion = dispersion;
                         needsUpdate = true;
                         changes.push('розташування');
-                        console.log(`Оновлено розташування для ${pointName}`);
                     }
                 }
                 
-                // ОНОВЛЕННЯ ФОТО - головна логіка
                 const currentImages = existingPoint.images || [];
                 const hasCurrentValidImages = hasValidImages(currentImages);
                 const hasNewValidImages = newImages.length > 0;
                 
                 if (hasNewValidImages) {
-                    // Випадок 1: У користувача НЕМАЄ валідних фото → ДОДАЄМО з CSV
                     if (!hasCurrentValidImages) {
                         existingPoint.images = newImages;
                         needsUpdate = true;
                         imagesAddedCount++;
                         changes.push(`фото (додано ${newImages.length})`);
-                        console.log(`Додано фото для ${pointName}: ${newImages.join(', ')}`);
                     }
-                    // Випадок 2: У користувача Є валідні фото → ПОРІВНЮЄМО
                     else if (!areImagesEqual(currentImages, newImages)) {
-                        console.log(`Фото для ${pointName}:`);
-                        console.log(`  Поточні: ${currentImages.join(', ')}`);
-                        console.log(`  З CSV: ${newImages.join(', ')}`);
-                        
-                        // Запитуємо користувача
                         const updateChoice = confirm(
                             `Точка "${pointName}" вже має фото:\n${currentImages.join('\n')}\n\n` +
                             `Замінити на фото з CSV?\n${newImages.join('\n')}\n\n` +
@@ -987,38 +1069,26 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                             needsUpdate = true;
                             imagesAddedCount++;
                             changes.push(`фото (замінено на ${newImages.length})`);
-                            console.log(`Оновлено фото для ${pointName}`);
                         } else {
                             imagesSkippedCount++;
                             changes.push(`фото (збережено існуючі)`);
-                            console.log(`Збережено поточні фото для ${pointName}`);
                         }
-                    } else {
-                        console.log(`Фото для ${pointName} вже існують, не змінено`);
                     }
-                } else if (hasCurrentValidImages && !hasNewValidImages) {
-                    // У CSV немає валідних фото, а у користувача є → нічого не робимо
-                    console.log(`У CSV немає валідних фото для ${pointName}, збережено існуючі`);
                 }
                 
                 if (needsUpdate) {
                     updatedCount++;
-                    console.log(`Оновлено ${pointName}: ${changes.join(', ')}`);
                 }
             } else {
-                // Нова точка - додаємо тільки валідні фото
                 pathology.point.push({
                     name: pointName,
                     dispersion: dispersion,
                     description: description || '',
-                    images: newImages  // тільки валідні посилання
+                    images: newImages
                 });
                 addedCount++;
                 if (newImages.length > 0) {
                     imagesAddedCount++;
-                    console.log(`Додано точку ${pointName} з ${newImages.length} фото`);
-                } else {
-                    console.log(`Додано точку ${pointName} (без фото)`);
                 }
             }
         }
@@ -1050,15 +1120,9 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                     afterDataChange();
                     
                     let message = `Імпорт завершено: додано ${addedCount} точок, оновлено ${updatedCount} точок`;
-                    if (imagesAddedCount > 0) {
-                        message += `, фото: ${imagesAddedCount}`;
-                    }
-                    if (imagesSkippedCount > 0) {
-                        message += `, збережено фото: ${imagesSkippedCount}`;
-                    }
-                    if (skippedCount > 0) {
-                        message += `, пропущено: ${skippedCount}`;
-                    }
+                    if (imagesAddedCount > 0) message += `, фото: ${imagesAddedCount}`;
+                    if (imagesSkippedCount > 0) message += `, збережено фото: ${imagesSkippedCount}`;
+                    if (skippedCount > 0) message += `, пропущено: ${skippedCount}`;
                     showToast(message);
                     
                     if (currentPage === 'search') {
@@ -1545,8 +1609,8 @@ function showUserRecords(userId) {
                 const time = new Date(rec.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const shortName = rec.pointName.split('/')[0].trim();
                 const isSaved = rec.measurements && rec.measurements.saved;
-                const elediyaVal = rec.measurements?.elediya !== null ? rec.measurements.elediya : '';
-                const folVal = rec.measurements?.fol !== null ? rec.measurements.fol : '';
+                const elediyaVal = rec.measurements?.elediya !== null && rec.measurements?.elediya !== undefined ? rec.measurements.elediya : '';
+                const folVal = rec.measurements?.fol !== null && rec.measurements?.fol !== undefined ? rec.measurements.fol : '';
                 
                 let folClass = '';
                 if (isSaved && folVal !== '') {
@@ -1710,6 +1774,17 @@ document.getElementById('addUserNameBtn')?.addEventListener('click', () => {
 // ========== ІНІЦІАЛІЗАЦІЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     appStorage.migrateIfNeeded();
+    
+    // Вимкнути автопідстановку браузера для поля патології,
+    // щоб "правая ладонь" не замінювалась на "левая ладонь"
+    const pathInput = document.getElementById('pointPathology');
+    if (pathInput) {
+        pathInput.setAttribute('autocomplete', 'off');
+        pathInput.setAttribute('autocorrect', 'off');
+        pathInput.setAttribute('autocapitalize', 'off');
+        pathInput.setAttribute('spellcheck', 'false');
+    }
+    
     loadData();
     initNavigation();
     updateTimerDisplay();

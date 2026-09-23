@@ -1,0 +1,617 @@
+{
+  "categories": {
+    "plant": "Растительные",
+    "vitamin": "Витамины",
+    "mineral": "Микроэлементы",
+    "parasitic": "Паразитарные",
+    "bacterial": "Бактериальные",
+    "viral": "Вирусные",
+    "fungal": "Грибковые",
+    "nosode": "Нозоды",
+    "homeopathic": "Гомеопатические препараты",
+    "other": "Прочее"
+  },
+  "source": "CALF",
+  "remedies": [
+    {
+      "name": "Aconitum",
+      "frequencies": "3347; 5611; 2791",
+      "description": "Гомеопатическое средство из растения Aconitum napellus (борец). Применяется при внезапных острых состояниях: лихорадка, сильное возбуждение, страх, тревога.",
+      "function": "Успокоение нервной системы при острых реакциях, снижение тревоги и страха, поддержка при лихорадочных состояниях.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Arnica",
+      "frequencies": "1042; 1032",
+      "description": "Гомеопатическое средство из растения Arnica montana. Ключевые показания: ушибы, мышечные боли, отеки после травм, гематомы.",
+      "function": "Противовоспалительное, противоотечное, обезболивающее действие при травмах и ушибах.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Arsenicum album",
+      "frequencies": "562",
+      "description": "Гомеопатическое средство на основе мышьяковистого ангидрида. Действует на нервную и сердечно-сосудистую системы, слизистые оболочки, кожу.",
+      "function": "Применяется при тревоге, беспокойстве, жгучих болях, истощении, желудочно-кишечных расстройствах.",
+      "category": "mineral",
+      "source": "CALF"
+    },
+    {
+      "name": "Bacillinum",
+      "frequencies": "132; 423; 432; 785; 853; 854; 921; 1027; 1042; 1932",
+      "description": "Нозод, приготовленный из легочной ткани, пораженной туберкулезной палочкой (Mycobacterium tuberculosis).",
+      "function": "Применяется при туберкулезном миазме, хронических воспалениях дыхательных путей, кожных заболеваниях, слабости.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Bacillus subtilis",
+      "frequencies": "432; 722; 822; 1246",
+      "description": "Нозод из бактерий Bacillus subtilis, которые могут вызывать конъюнктивит.",
+      "function": "Санация при бактериальных инфекциях, связанных с Bacillus subtilis.",
+      "category": "bacterial",
+      "source": "CALF"
+    },
+    {
+      "name": "Bacteria lactis",
+      "frequencies": "512; 526; 798; 951; 5412",
+      "description": "Нозод из молочнокислых бактерий.",
+      "function": "Нормализация микрофлоры, поддержка пищеварения.",
+      "category": "bacterial",
+      "source": "CALF"
+    },
+    {
+      "name": "BCG Vaccine",
+      "frequencies": "277; 768; 832; 725",
+      "description": "Нозод из вакцины БЦЖ (бацилла Кальметта—Герена).",
+      "function": "Применяется при поствакцинальных реакциях и туберкулезном миазме.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Bermuda smut",
+      "frequencies": "422; 767; 847; 971; 644; 780",
+      "description": "Гомеопатический аллерген, приготовленный из грибка головни, поражающего бермудскую траву.",
+      "function": "Десенсибилизация при аллергии на плесневые грибки.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Carbo animalis",
+      "frequencies": "444",
+      "description": "Гомеопатическое средство из животного угля (костный уголь).",
+      "function": "Применяется при хронических слабостях, венозном застое, кожных заболеваниях.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Causticum",
+      "frequencies": "540; 1013",
+      "description": "Гомеопатическое средство, получаемое из едкого калия.",
+      "function": "Применяется при параличах, спазмах, болях в суставах, кожных поражениях.",
+      "category": "mineral",
+      "source": "CALF"
+    },
+    {
+      "name": "Chelidonium",
+      "frequencies": "162",
+      "description": "Гомеопатическое средство из чистотела большого.",
+      "function": "Действует на печень и желчевыводящие пути, применяется при гепатитах, холециститах.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Cholesterinum",
+      "frequencies": "1386; 173; 620; 635; 780",
+      "description": "Гомеопатическое средство из холестерина.",
+      "function": "Применяется при атеросклерозе, желчнокаменной болезни, нарушениях липидного обмена.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Cimicifuga",
+      "frequencies": "334; 594",
+      "description": "Гомеопатическое средство из растения Cimicifuga racemosa (черный когош).",
+      "function": "Применяется при менструальных нарушениях, мышечных болях, невралгиях.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Crocus sativus",
+      "frequencies": "710",
+      "description": "Гомеопатическое средство из шафрана посевного.",
+      "function": "Применяется при маточных кровотечениях, истерических состояниях, тошноте.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Enterococcinum",
+      "frequencies": "686; 409",
+      "description": "Нозод из энтерококков (Streptococcus faecalis).",
+      "function": "Применяется при инфекциях мочевыводящих и пищеварительных путей.",
+      "category": "bacterial",
+      "source": "CALF"
+    },
+    {
+      "name": "Erythema nosodum",
+      "frequencies": "9.39",
+      "description": "Нозод из тканей, пораженных узловатой эритемой.",
+      "function": "Применяется при кожных воспалительных процессах, узловатой эритеме.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Fel tauri",
+      "frequencies": "672",
+      "description": "Гомеопатическое средство из бычьей желчи.",
+      "function": "Применяется при нарушениях пищеварения, запорах, заболеваниях печени.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Fischpyrogen",
+      "frequencies": "832",
+      "description": "Нозод из гнилостных продуктов (рыбный пироген).",
+      "function": "Применяется при септических состояниях, гнойных процессах.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Fluor Alb",
+      "frequencies": "110; 342; 420; 423; 688; 757",
+      "description": "Гомеопатическое средство из фторида кальция (клеточная соль).",
+      "function": "Применяется при заболеваниях костей, зубов, соединительной ткани.",
+      "category": "mineral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe 86 tri",
+      "frequencies": "532; 588; 660; 662; 664; 666; 668; 670; 994; 462; 712",
+      "description": "Нозод из вирусов гриппа штаммов 1986 года (тройная вакцина).",
+      "function": "Применяется при гриппозных состояниях, профилактика и лечение.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe 87",
+      "frequencies": "140; 332; 581; 953; 4868; 730",
+      "description": "Нозод из вирусов гриппа штамма 1987 года.",
+      "function": "Применяется при гриппе и ОРВИ.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe 89",
+      "frequencies": "353; 536; 874",
+      "description": "Нозод из вирусов гриппа штамма 1989 года.",
+      "function": "Применяется при гриппозных состояниях.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe 90",
+      "frequencies": "541; 560; 656",
+      "description": "Нозод из вирусов гриппа штамма 1990 года.",
+      "function": "Применяется при гриппе и ОРВИ.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe A Port",
+      "frequencies": "622; 863",
+      "description": "Нозод из вируса гриппа А (штамм Port Chalmers).",
+      "function": "Применяется при гриппе типа А.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe Asian A",
+      "frequencies": "516; 656; 434",
+      "description": "Нозод из вируса азиатского гриппа А.",
+      "function": "Применяется при гриппе, вызванном азиатским штаммом.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe Hong Kong",
+      "frequencies": "555",
+      "description": "Нозод из вируса гриппа штамма Гонконг.",
+      "function": "Применяется при гриппе, вызванном гонконгским штаммом.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe British",
+      "frequencies": "558; 932",
+      "description": "Нозод из вируса гриппа британского штамма.",
+      "function": "Применяется при гриппе, вызванном британским штаммом.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe Spanish",
+      "frequencies": "462; 787",
+      "description": "Нозод из вируса испанского гриппа (H1N1, 1918).",
+      "function": "Применяется при гриппе, вызванном испанским штаммом.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe V",
+      "frequencies": "861",
+      "description": "Нозод из вируса гриппа V.",
+      "function": "Применяется при гриппозных состояниях.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe V-2",
+      "frequencies": "324; 652; 653",
+      "description": "Нозод из вируса гриппа V-2.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe V-3",
+      "frequencies": "550; 553",
+      "description": "Нозод из вируса гриппа V-3.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe V-4",
+      "frequencies": "232; 352; 2558",
+      "description": "Нозод из вируса гриппа V-4.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe V-5",
+      "frequencies": "945; 518",
+      "description": "Нозод из вируса гриппа V-5.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grip. V75 Victoria",
+      "frequencies": "343; 316; 1020",
+      "description": "Нозод из вируса гриппа штамма Виктория (V75).",
+      "function": "Применяется при гриппе, вызванном штаммом Виктория.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe VA 2-L",
+      "frequencies": "447",
+      "description": "Нозод из вируса гриппа VA 2-L.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe VA-2",
+      "frequencies": "334; 472; 496; 833; 836; 922; 728",
+      "description": "Нозод из вируса гриппа VA-2.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe vapch",
+      "frequencies": "153; 343",
+      "description": "Нозод из вируса гриппа vapch.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Grippe virus A",
+      "frequencies": "322; 332; 776",
+      "description": "Нозод из вируса гриппа типа А.",
+      "function": "Применяется при гриппе типа А.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Griseofulvin",
+      "frequencies": "14338.68; 713.88",
+      "description": "Гомеопатическое средство из противогрибкового препарата гризеофульвина.",
+      "function": "Применяется при грибковых поражениях кожи, ногтей, волос.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Haemophilus InfB",
+      "frequencies": "652; 942; 483; 731; 746",
+      "description": "Нозод из бактерии Haemophilus influenzae типа B.",
+      "function": "Применяется при инфекциях дыхательных путей, менингите.",
+      "category": "bacterial",
+      "source": "CALF"
+    },
+    {
+      "name": "Haemophilus Inf",
+      "frequencies": "542; 552; 885; 959; 734; 633.1; 2532.4",
+      "description": "Нозод из бактерии Haemophilus influenzae.",
+      "function": "Применяется при инфекциях дыхательных путей.",
+      "category": "bacterial",
+      "source": "CALF"
+    },
+    {
+      "name": "Hirudo medicinalis",
+      "frequencies": "128",
+      "description": "Гомеопатическое средство из медицинской пиявки.",
+      "function": "Применяется при венозном застое, тромбозах, кровотечениях.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Influenzum toxicum",
+      "frequencies": "854",
+      "description": "Нозод из токсинов вируса гриппа.",
+      "function": "Применяется при тяжелых формах гриппа, интоксикации.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Lac defloratum",
+      "frequencies": "230; 371; 232; 2121",
+      "description": "Гомеопатическое средство из обезжиренного молока.",
+      "function": "Применяется при головных болях, запорах, нарушениях питания.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Luesinum-Syphilinum",
+      "frequencies": "6600; 789; 900; 2776; 177; 650; 625; 600; 660; 658",
+      "description": "Нозод из тканей, пораженных сифилисом.",
+      "function": "Применяется при сифилитическом миазме, хронических инфекциях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Lyssinum",
+      "frequencies": "20; 120; 547; 793",
+      "description": "Нозод из тканей, пораженных бешенством.",
+      "function": "Применяется при поствакцинальных реакциях, неврологических нарушениях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Magnesium",
+      "frequencies": "480",
+      "description": "Гомеопатическое средство из магния.",
+      "function": "Применяется при мышечных спазмах, нервном возбуждении, нарушениях сна.",
+      "category": "mineral",
+      "source": "CALF"
+    },
+    {
+      "name": "Mannan",
+      "frequencies": "961; 661",
+      "description": "Гомеопатическое средство из полисахарида маннана.",
+      "function": "Применяется при иммунных нарушениях, аллергиях.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Marsh elder",
+      "frequencies": "474",
+      "description": "Гомеопатическое средство из растения болотный бузина.",
+      "function": "Применяется при аллергиях, астме, кожных высыпаниях.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Medorrhinum",
+      "frequencies": "230; 442; 554; 843; 854; 1700; 1880; 2222; 602",
+      "description": "Нозод из выделений при гонорее.",
+      "function": "Применяется при гонорейном миазме, хронических инфекциях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Meningococcinum",
+      "frequencies": "720",
+      "description": "Нозод из менингококков.",
+      "function": "Применяется при менингите, менингококковой инфекции.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Methotrex. toxic",
+      "frequencies": "584",
+      "description": "Гомеопатическое средство из токсинов метотрексата.",
+      "function": "Применяется при интоксикации после химиотерапии.",
+      "category": "homeopathic",
+      "source": "CALF"
+    },
+    {
+      "name": "Monotospora languinosa",
+      "frequencies": "788",
+      "description": "Гомеопатическое средство из плесневого грибка Monotospora languinosa.",
+      "function": "Применяется при аллергии на плесень.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Morbillinum",
+      "frequencies": "467; 520; 1489",
+      "description": "Нозод из тканей, пораженных корью.",
+      "function": "Применяется при коревом миазме, поствакцинальных реакциях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Mucor plumbeus",
+      "frequencies": "361; 578; 785; 877",
+      "description": "Гомеопатическое средство из плесневого грибка Mucor plumbeus.",
+      "function": "Применяется при грибковых поражениях, аллергиях.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Mycogone spp",
+      "frequencies": "371; 446; 1123; 748",
+      "description": "Гомеопатическое средство из грибков рода Mycogone.",
+      "function": "Применяется при аллергии на плесень.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Myocardit. necros",
+      "frequencies": "706; 789",
+      "description": "Нозод из тканей сердца, погибших в результате недостаточного кровоснабжения.",
+      "function": "Применяется при миокардите, постинфарктных состояниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Nasturtium",
+      "frequencies": "143",
+      "description": "Гомеопатическое средство из растения настурция.",
+      "function": "Применяется при инфекциях мочевыводящих путей.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Psorinum",
+      "frequencies": "786; 767",
+      "description": "Нозод из чесоточных выделений.",
+      "function": "Применяется при псориазе, экземе, хронических кожных заболеваниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyocyaneus",
+      "frequencies": "437",
+      "description": "Нозод из Pseudomonas pyocyanea.",
+      "function": "Применяется при гнойных инфекциях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyrogenium 62",
+      "frequencies": "151; 429; 594; 622; 872; 497; 498",
+      "description": "Гомеопатическое средство из гнилостных продуктов.",
+      "function": "Применяется при септических состояниях, гнойных процессах.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyrogenium ex ovo",
+      "frequencies": "231; 1244; 1210; 1216",
+      "description": "Гомеопатическое средство из гнилостных продуктов яйца.",
+      "function": "Применяется при септических состояниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyrogenium fish",
+      "frequencies": "287; 304",
+      "description": "Гомеопатическое средство из гнилостных продуктов рыбы.",
+      "function": "Применяется при септических состояниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyrogenium mayo",
+      "frequencies": "688; 759; 1625; 727; 770",
+      "description": "Гомеопатическое средство из гнилостных продуктов.",
+      "function": "Применяется при септических состояниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Pyrogenium suis",
+      "frequencies": "341; 356; 673",
+      "description": "Гомеопатическое средство из гнилостных продуктов свиньи.",
+      "function": "Применяется при септических состояниях.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Ragweed",
+      "frequencies": "473",
+      "description": "Гомеопатическое средство из пыльцы амброзии.",
+      "function": "Применяется при аллергии на амброзию, сенной лихорадке.",
+      "category": "plant",
+      "source": "CALF"
+    },
+    {
+      "name": "Sorghum smut",
+      "frequencies": "294",
+      "description": "Гомеопатический аллерген из грибка головни, поражающего сорго.",
+      "function": "Применяется при аллергии на плесень.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Tonsillar Nosode",
+      "frequencies": "1656",
+      "description": "Нозод из тканей миндалин.",
+      "function": "Применяется при хроническом тонзиллите.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Vaccininum",
+      "frequencies": "476",
+      "description": "Нозод из лимфы оспы (small pox's lymph).",
+      "function": "Применяется при поствакцинальных реакциях (vaccinosis), невралгиях, упорных кожных высыпаниях, ознобе, несварении с метеоризмом.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Vapch Grippe",
+      "frequencies": "153; 343",
+      "description": "Нозод из вируса гриппа Vapch.",
+      "function": "Применяется при гриппе.",
+      "category": "viral",
+      "source": "CALF"
+    },
+    {
+      "name": "Varicillen",
+      "frequencies": "3343; 2320; 2170; 1600; 1500; 1160; 914; 880; 833; 802; 787; 664; 580; 3.9",
+      "description": "Нозод из тканей, поражённых ветряной оспой (Varicella zoster).",
+      "function": "Применяется при ветряной оспе, опоясывающем лишае.",
+      "category": "nosode",
+      "source": "CALF"
+    },
+    {
+      "name": "Bakers дрожжи (Saccharomyces cerevisiae)",
+      "frequencies": "775; 843; 1000",
+      "description": "Гомеопатическое средство из пекарских дрожжей (Saccharomyces cerevisiae).",
+      "function": "Применяется при аллергии на дрожжи, кандидозе, нарушениях ферментации.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Амеба - печень-1 (Entamoeba histolytica / Печеночный амебиаз)",
+      "frequencies": "344; 605; 510; 943",
+      "description": "Паразитарный нозод дизентерийной амебы. Применяется при амебных абсцессах печени, колите, гепатомегалии.",
+      "function": "Подавление жизнедеятельности простейших и санация очагов в печени.",
+      "category": "parasitic",
+      "source": "CALF"
+    },
+    {
+      "name": "Афлатоксин-1 (Aflatoxin B1)",
+      "frequencies": "344; 510; 943; 474; 476; 568",
+      "description": "Нозод микотоксина (афлатоксина), продуцируемого плесневыми грибами Aspergillus. Применяется при токсических поражениях печени, хронических интоксикациях.",
+      "function": "Связывание и выведение микотоксинов, защита гепатоцитов.",
+      "category": "fungal",
+      "source": "CALF"
+    },
+    {
+      "name": "Гепатит New Nos (Hepatitis general_v)",
+      "frequencies": "987; 934; 922; 878; 876; 842; 786; 781; 563; 562; 558; 534; 528; 477; 334; 321; 317; 224; 213; 166",
+      "description": "Нозод из тканей, пораженных вирусом гепатита (обобщенный).",
+      "function": "Применяется при хронических гепатитах, поддержка функции печени.",
+      "category": "viral",
+      "source": "CALF"
+    }
+  ]
+}

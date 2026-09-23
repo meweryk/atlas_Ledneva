@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4.44'; // збільште при зміні статичних файлів!
+const CACHE_VERSION = 'v4.45'; // збільште при зміні статичних файлів!
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -11,8 +11,10 @@ const STATIC_URLS = [
     '/atlas_Ledneva/index.html',
     '/atlas_Ledneva/css/style.css', 
     '/atlas_Ledneva/js/app.js',
+    '/atlas_Ledneva/js/nozod.js',
     '/atlas_Ledneva/manifest.json',
     '/atlas_Ledneva/point.json',
+    '/atlas_Ledneva/nozod.json',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css',
     'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css'
