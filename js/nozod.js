@@ -524,45 +524,61 @@
 
     /* ---------- Интеграция с навигацией ---------- */
 
-    function showNozodPage() {
-        ['mainPage', 'historyPage', 'searchPage', 'aboutPage'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-        });
-        const page = document.getElementById('nozodPage');
-        if (page) page.style.display = 'block';
+    /* ---------- Интеграция с навигацией ---------- */
 
-        document.querySelectorAll('.navbar-nav .nav-link').forEach(a => a.classList.remove('active'));
-        const link = document.getElementById('nav-nozod');
-        if (link) link.classList.add('active');
-
-        loadNozodes();
+function showNozodPage(e) {
+    if (e) {
+        e.preventDefault();
+        // Не даём app.js перехватить клик и показать «Главную»
+        e.stopPropagation();
     }
+    
+    // Скрываем все страницы, включая саму nozodPage (на случай повторного клика)
+    ['mainPage', 'historyPage', 'searchPage', 'aboutPage', 'nozodPage'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    
+    const page = document.getElementById('nozodPage');
+    if (page) page.style.display = 'block';
+    
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(a => a.classList.remove('active'));
+    const link = document.getElementById('nav-nozod');
+    if (link) link.classList.add('active');
+    
+    loadNozodes();
+}
 
-    function bindNav() {
-        const link = document.getElementById('nav-nozod');
-        if (link) {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                showNozodPage();
-            });
-        }
+function hideNozodPage() {
+    const page = document.getElementById('nozodPage');
+    if (page) page.style.display = 'none';
+    stopAll();
+}
 
-        ['nav-home', 'nav-history', 'nav-search', 'nav-about'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.addEventListener('click', () => stopAll());
-        });
-
-        document.addEventListener('keydown', ev => {
-            if (ev.key === 'Escape') stopAll();
-        });
+function bindNav() {
+    const link = document.getElementById('nav-nozod');
+    if (link) {
+        // capture: true — перехватываем клик до app.js
+        link.addEventListener('click', showNozodPage, true);
     }
+    
+    // При клике на любой другой пункт меню — прячем страницу нозодов и глушим звук
+    ['nav-home', 'nav-history', 'nav-search', 'nav-about'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', hideNozodPage);
+    });
+    
+    // Esc — глушим звук (не прячем страницу)
+    document.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') stopAll();
+    });
+}
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindNav);
-    } else {
-        bindNav();
-    }
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindNav);
+} else {
+    bindNav();
+}
 
     // Публичный API
     window.Nozod = {
