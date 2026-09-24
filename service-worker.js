@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4.52'; // збільште при зміні статичних файлів!
+const CACHE_VERSION = 'v4.53'; // збільште при зміні статичних файлів!
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -9,6 +9,7 @@ const FALLBACK_HTML = '/atlas_Ledneva/index.html';
 const STATIC_URLS = [
     '/atlas_Ledneva/',
     '/atlas_Ledneva/index.html',
+    '/atlas_Ledneva/LUXE METALLICS.html',
     '/atlas_Ledneva/css/style.css', 
     '/atlas_Ledneva/js/app.js',
     '/atlas_Ledneva/js/nozod.js',
@@ -97,6 +98,26 @@ self.addEventListener('fetch', event => {
         );
         return;
     }
+    
+    // 2.1. Дані nozod.json – network-first з ігноруванням HTTP-кешу
+if (url.pathname.endsWith('nozod.json')) {
+    event.respondWith(
+        fetch(event.request, { cache: 'no-cache' })
+        .then(response => {
+            console.log('[SW Atlas] nozod.json отримано з мережі');
+            const responseClone = response.clone();
+            caches.open(DATA_CACHE_NAME).then(cache => {
+                cache.put(event.request, responseClone);
+            });
+            return response;
+        })
+        .catch(() => {
+            console.log('[SW Atlas] nozod.json – мережа недоступна, беру з кешу');
+            return caches.match(event.request);
+        })
+    );
+    return;
+}
     
     // 3. Інші запити (включаючи навігацію) – cache-first з фоновим оновленням і резервним fallback
     event.respondWith(
