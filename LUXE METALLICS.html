@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Акустическо-Оптический Синтезатор</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@300;400;600&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #090a0f;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    .font-cinzel { font-family: 'Cinzel', serif; }
+
+    .glass-panel {
+      background: rgba(18, 20, 29, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .gold-glow { box-shadow: 0 0 25px rgba(212, 175, 55, 0.2); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+  <!-- MAIN INTERFACE -->
+  <main id="app-interface" class="container mx-auto px-4 py-8 max-w-5xl transition-opacity duration-500">
+    <header class="text-center mb-8">
+      <div class="inline-block p-2 px-4 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs tracking-widest uppercase mb-3">
+        Физика &amp; Гармония
+      </div>
+      <h1 class="text-3xl md:text-5xl font-bold font-cinzel text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-600 mb-3">
+        Акустическо-Оптический Синтезатор
+      </h1>
+      <p class="text-slate-400 text-xs md:text-sm max-w-2xl mx-auto">
+        Зависимость скорости движения и масштаба пятен от частоты ($0\text{–}3000\text{ Гц}$) • Стереозвук со сдвигом фаз 90°.
+      </p>
+    </header>
+
+    <!-- Controls Card -->
+    <div class="glass-panel rounded-2xl p-6 mb-8 gold-glow relative overflow-hidden">
+      <label class="block text-xs font-medium text-amber-200/90 mb-2 uppercase tracking-wider">
+        Частоты в Герцах (разделитель « ; »)
+      </label>
+      
+      <div class="flex flex-col md:flex-row gap-3 mb-4">
+        <textarea 
+          id="freqInput" 
+          rows="2"
+          placeholder="Например: 1558; 1788; 1880; 2058; 2272; 2423; 2726" 
+          class="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 text-amber-100 font-mono text-sm focus:outline-none focus:border-amber-500 transition-all resize-none"
+        >1558; 1788; 1880; 2058; 2272; 2423; 2726</textarea>
+        
+        <button 
+          id="btnPlay" 
+          class="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer text-base whitespace-nowrap"
+        >
+          <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          Показать и озвучить
+        </button>
+      </div>
+
+      <!-- Presets -->
+      <div class="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <span class="text-slate-500 w-full md:w-auto mb-1 md:mb-0">Пресеты:</span>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition" data-val="1558; 1788; 1880; 2058; 2272; 2423; 2726">🌈 Радуга</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 border border-yellow-500/30 transition" data-val="887; 909; 932; 948; 965; 1773; 1864; 1930">✨ Золото (оттенки)</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/30 transition" data-val="1059; 1101; 1148; 1185; 1225; 1298; 2203; 2371">❄️ Серебро (оттенки)</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 transition" data-val="413; 957; 1049; 1124; 653.8; 1515; 2097; 2249; 657.8">🦪 Перламутр (оттенки)</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="432; 528; 639">Сольфеджио</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 329.63; 392.00; 493.88">Мажор C-E-G-B</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-panel rounded-2xl p-6">
+      <h2 class="text-lg font-cinzel font-semibold text-amber-200 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Таблица физических расчетов
+      </h2>
+      
+      <div class="overflow-x-auto max-h-96">
+        <table class="w-full text-left text-xs">
+          <thead class="sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+            <tr class="border-b border-slate-700/80 text-amber-400/80 font-mono uppercase">
+              <th class="py-2.5 px-3">Частота (Гц)</th>
+              <th class="py-2.5 px-3">Длина волны ($c/f$)</th>
+              <th class="py-2.5 px-3">Октава ($2^n$)</th>
+              <th class="py-2.5 px-3">Спектр ($\lambda$)</th>
+              <th class="py-2.5 px-3">Цвет</th>
+              <th class="py-2.5 px-3">HEX</th>
+              <th class="py-2.5 px-3">Период</th>
+              <th class="py-2.5 px-3">Размер пятна</th>
+            </tr>
+          </thead>
+          <tbody id="resultsTable" class="divide-y divide-slate-800/60 font-mono"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- FULLSCREEN DISPLAY OVERLAY -->
+  <div id="fullscreen-overlay" class="fixed inset-0 z-50 opacity-0 pointer-events-none transition-opacity duration-500 flex flex-col justify-between">
+    <canvas id="fluidCanvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
+
+    <!-- Top Action Bar -->
+    <div class="relative z-20 p-4 md:p-6 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/40 to-transparent">
+      <div class="flex items-center gap-2 md:gap-3">
+        <button 
+          id="btnToggleInfo" 
+          title="Информационная панель"
+          class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </button>
+
+        <button 
+          id="btnToggleSound" 
+          title="Включить / Выключить звук"
+          class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center"
+        >
+          <svg id="iconSoundOn" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.314M6.5 9.5H3a1 1 0 00-1 1v3a1 1 0 001 1h3.5l4 4.5A1 1 0 0012 18V6a1 1 0 00-1.5-.866L6.5 9.5z"/></svg>
+          <svg id="iconSoundOff" class="w-5 h-5 hidden text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-dasharray="2 2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+        </button>
+
+        <button 
+          id="btnStop" 
+          title="Старт / Пауза"
+          class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+        >
+          <svg id="iconPause" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          <svg id="iconPlayResume" class="w-5 h-5 fill-current hidden" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+      </div>
+
+      <!-- Блок кнопок справа -->
+      <div class="flex flex-col gap-2 items-end">
+        <button 
+          id="btnBack" 
+          class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Вернуться
+        </button>
+
+        <button 
+          onclick="goBackToAtlas()" 
+          class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Атлас
+        </button>
+      </div>
+    </div>
+
+    <!-- Info Drawer -->
+    <div id="infoDrawer" class="relative z-20 mx-4 md:mx-6 max-w-md glass-panel rounded-2xl p-4 shadow-2xl transition-all duration-300 transform -translate-y-4 opacity-0 pointer-events-none">
+      <div class="mb-4 pb-3 border-b border-white/10">
+        <div class="flex justify-between items-center text-xs text-amber-200 mb-1">
+          <span class="font-semibold">Делитель скорости бликования</span>
+          <span id="glareSpeedLabel" class="font-mono text-cyan-300">1.0x (Коэффициент)</span>
+        </div>
+        <input 
+          type="range" 
+          id="glareMultiplier" 
+          min="0.2" 
+          max="5.0" 
+          step="0.1" 
+          value="2.4" 
+          class="w-full accent-amber-400 bg-slate-800 rounded-lg h-2 cursor-pointer"
+        />
+        <p class="text-[10px] text-slate-400 mt-1">Чем больше коэффициент, тем быстрее движутся и пульсируют цветовые пятна.</p>
+      </div>
+
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold font-cinzel text-amber-200">Спектр, период и масштаб</span>
+        <span id="activeCount" class="text-xs text-slate-400 font-mono">0 частот</span>
+      </div>
+      <div id="activeSwatches" class="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1"></div>
+    </div>
+
+    <div class="relative z-10 p-4"></div>
+  </div>
+
+  <script>
+    const SPEED_OF_LIGHT = 299792458;
+    const SAMPLE_RATE = 48000;
+
+    const freqInput = document.getElementById('freqInput');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnBack = document.getElementById('btnBack');
+    const btnStop = document.getElementById('btnStop');
+    const iconPause = document.getElementById('iconPause');
+    const iconPlayResume = document.getElementById('iconPlayResume');
+    const btnToggleSound = document.getElementById('btnToggleSound');
+    const btnToggleInfo = document.getElementById('btnToggleInfo');
+    const iconSoundOn = document.getElementById('iconSoundOn');
+    const iconSoundOff = document.getElementById('iconSoundOff');
+    const infoDrawer = document.getElementById('infoDrawer');
+    const activeSwatches = document.getElementById('activeSwatches');
+    const activeCount = document.getElementById('activeCount');
+    const resultsTable = document.getElementById('resultsTable');
+    const appInterface = document.getElementById('app-interface');
+    const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+    const fluidCanvas = document.getElementById('fluidCanvas');
+    const glareMultiplier = document.getElementById('glareMultiplier');
+    const glareSpeedLabel = document.getElementById('glareSpeedLabel');
+    const ctx = fluidCanvas.getContext('2d');
+
+    let audioCtx = null;
+    let activeOscillators = [];
+    let activeDelays = [];
+    let activeMerger = null;
+    let activeGainNode = null;
+    
+    let animationFrameId = null;
+    let colorNodes = [];
+    let particles = [];
+    let isMuted = false;
+    let isInfoOpen = false;
+    let isPlaying = false;
+
+    function parseFrequencies() {
+      return freqInput.value
+        .split(';')
+        .map(v => parseFloat(v.trim().replace(',', '.')))
+        .filter(v => !isNaN(v) && v > 0);
+    }
+
+    function getFreqBasePeriod(freq) {
+      const step = Math.floor(freq / 1000);
+      return Math.max(0.25, 5.25 - step * 0.25);
+    }
+
+    function getFreqSizeCoeff(freq) {
+      if (freq >= 3000) return 0.5;
+      return 1.5 - (freq / 3000.0);
+    }
+
+    function getPearlColor(freq, index, lambdaNm) {
+  // 1. Получаем истинный спектральный цвет из длины волны
+  const spectral = wavelengthToRGBContinuous(lambdaNm);
+  
+  // 2. Коэффициент «перламутровости» — сколько белого подмешать
+  //    0.0 = чистый спектр (радуга)
+  //    0.5 = пастель (рекомендую)
+  //    0.7 = сильный перламутр, ближе к классическому жемчугу
+  //    0.85 = почти белый (как было до правки)
+  const pearlMix = 0.75;
+  
+  // 3. Микро-вариация между пятнами, чтобы они не сливались в один цвет
+  const jitter = index >= 0 ? ((index % 5) - 2) * 3 : 0;
+  
+  let r = spectral.r * (1 - pearlMix) + 255 * pearlMix + jitter;
+  let g = spectral.g * (1 - pearlMix) + 255 * pearlMix + jitter;
+  let b = spectral.b * (1 - pearlMix) + 255 * pearlMix - jitter;
+  
+  // 4. Лёгкий тёплый сдвиг — жемчуг всегда чуть теплее чистого спектра
+  r += 6;
+  g += 2;
+  b -= 4;
+  
+  r = Math.min(255, Math.max(0, Math.round(r)));
+  g = Math.min(255, Math.max(0, Math.round(g)));
+  b = Math.min(255, Math.max(0, Math.round(b)));
+  
+  const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+  return { r, g, b, hex, rgbStr: `rgb(${r}, ${g}, ${b})` };
+}
+
+    function getSilverColor(freq, index) {
+      const base = 192;
+      const metallicShifts = [0, -15, 12, -8, 18, -12, 24, -20];
+      const idx = index >= 0 ? index : Math.abs(Math.floor(freq)) % metallicShifts.length;
+      const shift = metallicShifts[idx % metallicShifts.length];
+
+      const val = Math.min(240, Math.max(150, base + shift));
+      const r = val, g = val, b = Math.min(245, val + 2);
+
+      const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+      return { r, g, b, hex, rgbStr: `rgb(${r}, ${g}, ${b})` };
+    }
+
+    function getGoldColor(freq, index) {
+      const goldShades = [
+        { r: 212, g: 175, b: 55 },
+        { r: 230, g: 202, b: 101 },  
+        { r: 255, g: 215, b: 0 },    
+        { r: 205, g: 149, b: 12 },   
+        { r: 238, g: 201, b: 0 },    
+        { r: 240, g: 216, b: 120 },  
+        { r: 218, g: 165, b: 32 },   
+        { r: 225, g: 190, b: 80 }    
+      ];
+      const idx = index >= 0 ? index : Math.abs(Math.floor(freq)) % goldShades.length;
+      const c = goldShades[idx % goldShades.length];
+
+      const hex = "#" + ((1 << 24) + (c.r << 16) + (c.g << 8) + c.b).toString(16).slice(1).toUpperCase();
+      return { r: c.r, g: c.g, b: c.b, hex, rgbStr: `rgb(${c.r}, ${c.g}, ${c.b})` };
+    }
+
+    function calculateSpectrum(freq) {
+      const origLambdaMeters = SPEED_OF_LIGHT / freq;
+      let lambdaNm = origLambdaMeters * 1e9;
+
+      let octavePower = 0;
+      if (lambdaNm > 780) {
+        while (lambdaNm > 780) {
+          lambdaNm /= 2;
+          octavePower--;
+        }
+      } else if (lambdaNm < 380) {
+        while (lambdaNm < 380) {
+          lambdaNm *= 2;
+          octavePower++;
+        }
+      }
+
+      const silverList = [1059, 1101, 1148, 1185, 1225, 1298, 2203, 2371];
+      const pearlList = [413, 957, 1049, 1124, 653.8, 1515, 2097, 2249, 657.8];
+      const goldList = [887, 909, 932, 948, 965, 1773, 1864, 1930];
+
+      const roundedF = Math.round(freq);
+      let colorData;
+
+      if (silverList.includes(roundedF)) {
+        colorData = getSilverColor(freq, silverList.indexOf(roundedF));
+      } else if (pearlList.includes(roundedF)) {
+        colorData = getPearlColor(freq, pearlList.indexOf(roundedF), lambdaNm);
+      } else if (goldList.includes(roundedF)) {
+        colorData = getGoldColor(freq, goldList.indexOf(roundedF));
+      } else {
+        colorData = wavelengthToRGBContinuous(lambdaNm);
+      }
+
+      const basePeriod = getFreqBasePeriod(freq);
+      const sizeCoeff = getFreqSizeCoeff(freq);
+
+      return { freq, origLambdaMeters, octavePower, visibleLambdaNm: lambdaNm, color: colorData, basePeriod, sizeCoeff };
+    }
+
+    function wavelengthToRGBContinuous(wl) {
+      let R = 0, G = 0, B = 0;
+
+      if (wl >= 380 && wl < 440) {
+        R = -(wl - 440) / (440 - 380);
+        G = 0;
+        B = 1;
+      } else if (wl >= 440 && wl < 490) {
+        R = 0;
+        G = (wl - 440) / (490 - 440);
+        B = 1;
+      } else if (wl >= 490 && wl < 510) {
+        R = 0;
+        G = 1;
+        B = -(wl - 510) / (510 - 490);
+      } else if (wl >= 510 && wl < 580) {
+        R = (wl - 510) / (580 - 510);
+        G = 1;
+        B = 0;
+      } else if (wl >= 580 && wl < 645) {
+        R = 1;
+        G = -(wl - 645) / (645 - 580);
+        B = 0;
+      } else if (wl >= 645 && wl <= 780) {
+        R = 1.0 - 0.6 * Math.pow((wl - 645) / (780 - 645), 1.5);
+        G = 0;
+        B = 0.15 * Math.sin(((wl - 645) / (780 - 645)) * Math.PI);
+      }
+
+      let factor = 1.0;
+      if (wl >= 380 && wl < 420) {
+        factor = 0.3 + 0.7 * (wl - 380) / (420 - 380);
+      } else if (wl >= 680 && wl <= 780) {
+        factor = 0.3 + 0.7 * (780 - wl) / (780 - 680);
+      }
+
+      const gamma = 0.8;
+      const r = Math.min(255, Math.max(0, Math.round(Math.pow(R * factor, gamma) * 255)));
+      const g = Math.min(255, Math.max(0, Math.round(Math.pow(G * factor, gamma) * 255)));
+      const b = Math.min(255, Math.max(0, Math.round(Math.pow(B * factor, gamma) * 255)));
+
+      const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+      return { r, g, b, hex, rgbStr: `rgb(${r}, ${g}, ${b})` };
+    }
+
+    function formatMeters(m) {
+      if (m > 1000 || m < 0.001) return m.toExponential(3) + ' м';
+      return m.toFixed(2) + ' м';
+    }
+
+    function updateTable() {
+      const freqs = parseFrequencies();
+      resultsTable.innerHTML = '';
+
+      if (freqs.length === 0) {
+        resultsTable.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-slate-500">Введите частоты через ";"</td></tr>`;
+        return;
+      }
+
+      freqs.forEach(f => {
+        const data = calculateSpectrum(f);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition-colors';
+        tr.innerHTML = `
+          <td class="py-2 px-3 font-semibold text-amber-200">${data.freq} Гц</td>
+          <td class="py-2 px-3 text-slate-400">${formatMeters(data.origLambdaMeters)}</td>
+          <td class="py-2 px-3 text-amber-400">${data.octavePower > 0 ? '+' : ''}${data.octavePower} oct</td>
+          <td class="py-2 px-3 text-cyan-300 font-bold">${data.visibleLambdaNm.toFixed(1)} нм</td>
+          <td class="py-2 px-3">
+            <div class="w-6 h-6 rounded-md border border-white/20 shadow-inner" style="background-color: ${data.color.hex}"></div>
+          </td>
+          <td class="py-2 px-3 text-slate-300">${data.color.hex}</td>
+          <td class="py-2 px-3 text-emerald-400 font-bold">${data.basePeriod.toFixed(2)} с</td>
+          <td class="py-2 px-3 text-purple-300 font-bold">${data.sizeCoeff.toFixed(2)}x</td>
+        `;
+        resultsTable.appendChild(tr);
+      });
+    }
+
+    function resizeCanvas() {
+      fluidCanvas.width = window.innerWidth;
+      fluidCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initColorNodes(calculatedData) {
+      resizeCanvas();
+      colorNodes = [];
+      particles = [];
+
+      const w = fluidCanvas.width;
+      const h = fluidCanvas.height;
+
+      calculatedData.forEach((item) => {
+        const freqSpeedFactor = 5.25 / item.basePeriod;
+
+        for (let k = 0; k < 2; k++) {
+          const angle = Math.random() * Math.PI * 2;
+          const spotRadius = Math.min(w, h) * 0.45 * item.sizeCoeff;
+
+          colorNodes.push({
+            freq: item.freq,
+            r: item.color.r,
+            g: item.color.g,
+            b: item.color.b,
+            x: Math.random() * w,
+            y: Math.random() * h,
+            baseRadius: spotRadius,
+            vx: Math.cos(angle) * (0.4 + Math.random() * 0.4) * freqSpeedFactor,
+            vy: Math.sin(angle) * (0.4 + Math.random() * 0.4) * freqSpeedFactor,
+            phase: Math.random() * Math.PI * 2,
+            pulseSpeed: 0.02 * freqSpeedFactor
+          });
+        }
+      });
+
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: Math.random() * 2.5 + 1,
+          alpha: Math.random(),
+          speed: Math.random() * 0.02 + 0.005
+        });
+      }
+    }
+
+    function renderFluid() {
+      if (!isPlaying) return;
+
+      const w = fluidCanvas.width;
+      const h = fluidCanvas.height;
+      const sliderCoeff = parseFloat(glareMultiplier.value) || 2.4;
+
+      ctx.fillStyle = '#050608';
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.globalCompositeOperation = 'screen';
+      colorNodes.forEach(node => {
+        node.phase += node.pulseSpeed * sliderCoeff;
+        node.x += (node.vx * sliderCoeff) + Math.sin(node.phase) * 0.5 * sliderCoeff;
+        node.y += (node.vy * sliderCoeff) + Math.cos(node.phase) * 0.5 * sliderCoeff;
+
+        if (node.x < -200) node.x = w + 200;
+        if (node.x > w + 200) node.x = -200;
+        if (node.y < -200) node.y = h + 200;
+        if (node.y > h + 200) node.y = -200;
+
+        const currentRadius = Math.max(60, node.baseRadius * 2 * (0.85 + 0.3 * Math.sin(node.phase)));
+        const currentAlpha = 0.55 + 0.35 * Math.cos(node.phase * 1.3);
+
+        const grad = ctx.createRadialGradient(node.x, node.y, 10, node.x, node.y, currentRadius);
+        grad.addColorStop(0, `rgba(${node.r}, ${node.g}, ${node.b}, ${currentAlpha})`);
+        grad.addColorStop(0.5, `rgba(${node.r}, ${node.g}, ${node.b}, ${currentAlpha * 0.3})`);
+        grad.addColorStop(1, `rgba(${node.r}, ${node.g}, ${node.b}, 0)`);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, currentRadius, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.globalCompositeOperation = 'lighter';
+      particles.forEach(p => {
+        p.alpha += p.speed * sliderCoeff;
+        const currentAlpha = (Math.sin(p.alpha) + 1) / 2;
+        ctx.fillStyle = `rgba(255, 255, 255, ${currentAlpha * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ctx.globalCompositeOperation = 'source-over';
+      animationFrameId = requestAnimationFrame(renderFluid);
+    }
+
+    function updateGlareSpeedLabel() {
+      const mult = parseFloat(glareMultiplier.value) || 2.4;
+      glareSpeedLabel.textContent = `${mult.toFixed(1)}x (Коэффициент)`;
+    }
+
+    function stopAudio() {
+      activeOscillators.forEach(osc => {
+        try { osc.stop(); osc.disconnect(); } catch(e) {}
+      });
+      activeOscillators = [];
+
+      activeDelays.forEach(d => {
+        try { d.disconnect(); } catch(e) {}
+      });
+      activeDelays = [];
+
+      if (activeMerger) {
+        try { activeMerger.disconnect(); } catch(e) {}
+        activeMerger = null;
+      }
+
+      if (activeGainNode) {
+        try { activeGainNode.disconnect(); } catch(e) {}
+        activeGainNode = null;
+      }
+    }
+
+    function startAudio(freqs) {
+      stopAudio();
+      if (!freqs || freqs.length === 0) return;
+
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new Ctx({ sampleRate: SAMPLE_RATE });
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const masterVol = isMuted ? 0 : (0.25 / Math.sqrt(freqs.length));
+      activeGainNode = audioCtx.createGain();
+      activeGainNode.gain.setValueAtTime(masterVol, audioCtx.currentTime);
+      activeGainNode.connect(audioCtx.destination);
+
+      activeMerger = audioCtx.createChannelMerger(2);
+      activeMerger.connect(activeGainNode);
+
+      activeOscillators = [];
+      activeDelays = [];
+
+      freqs.forEach(f => {
+        const osc = audioCtx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, audioCtx.currentTime);
+
+        osc.connect(activeMerger, 0, 1);
+
+        const delayL = audioCtx.createDelay(1.0);
+        const quarterPeriod = 1 / (4 * f);
+        delayL.delayTime.value = Math.max(quarterPeriod, 1 / SAMPLE_RATE);
+
+        osc.connect(delayL);
+        delayL.connect(activeMerger, 0, 0);
+
+        osc.start();
+        activeOscillators.push(osc);
+        activeDelays.push(delayL);
+      });
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        isPlaying = false;
+        stopAudio();
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        iconPause.classList.add('hidden');
+        iconPlayResume.classList.remove('hidden');
+        btnStop.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
+        btnStop.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
+      } else {
+        const freqs = parseFrequencies();
+        if (freqs.length === 0) return;
+        isPlaying = true;
+        iconPlayResume.classList.add('hidden');
+        iconPause.classList.remove('hidden');
+        btnStop.classList.remove('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
+        btnStop.classList.add('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
+        startAudio(freqs);
+        renderFluid();
+      }
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      if (isMuted) {
+        iconSoundOn.classList.add('hidden');
+        iconSoundOff.classList.remove('hidden');
+        if (activeGainNode && audioCtx) activeGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      } else {
+        iconSoundOn.classList.remove('hidden');
+        iconSoundOff.classList.add('hidden');
+        const freqs = parseFrequencies();
+        const masterVol = 0.25 / Math.sqrt(freqs.length || 1);
+        if (activeGainNode && audioCtx) activeGainNode.gain.setValueAtTime(masterVol, audioCtx.currentTime);
+      }
+    }
+
+    function toggleInfoDrawer() {
+      isInfoOpen = !isInfoOpen;
+      if (isInfoOpen) {
+        infoDrawer.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+        infoDrawer.classList.add('opacity-100', 'translate-y-0');
+      } else {
+        infoDrawer.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+        infoDrawer.classList.remove('opacity-100', 'translate-y-0');
+      }
+    }
+
+    function launchShow() {
+      const freqs = parseFrequencies();
+      if (freqs.length === 0) return;
+
+      const calculatedData = freqs.map(f => calculateSpectrum(f));
+
+      activeSwatches.innerHTML = '';
+      activeCount.textContent = `${freqs.length} частот`;
+
+      calculatedData.forEach(item => {
+        const badge = document.createElement('div');
+        badge.className = 'flex items-center justify-between text-xs font-mono p-1.5 rounded-lg bg-black/40 border border-white/10';
+        badge.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shadow" style="background-color: ${item.color.hex}"></span>
+            <span class="text-amber-200 font-bold">${item.freq} Гц</span>
+          </div>
+          <span class="text-cyan-300">${item.visibleLambdaNm.toFixed(0)} нм</span>
+          <span class="text-emerald-400 font-semibold">${item.basePeriod.toFixed(2)}с</span>
+          <span class="text-purple-300 font-semibold">${item.sizeCoeff.toFixed(2)}x</span>
+        `;
+        activeSwatches.appendChild(badge);
+      });
+
+      fullscreenOverlay.classList.remove('opacity-0', 'pointer-events-none');
+      appInterface.classList.add('opacity-0');
+
+      isPlaying = true;
+      iconPlayResume.classList.add('hidden');
+      iconPause.classList.remove('hidden');
+
+      initColorNodes(calculatedData);
+      renderFluid();
+      startAudio(freqs);
+    }
+
+    function exitShow() {
+      fullscreenOverlay.classList.add('opacity-0', 'pointer-events-none');
+      appInterface.classList.remove('opacity-0');
+      
+      isPlaying = false;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      stopAudio();
+      
+      if (isInfoOpen) toggleInfoDrawer();
+    }
+
+    freqInput.addEventListener('input', updateTable);
+    glareMultiplier.addEventListener('input', updateGlareSpeedLabel);
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        freqInput.value = btn.getAttribute('data-val');
+        updateTable();
+      });
+    });
+
+    btnPlay.addEventListener('click', launchShow);
+    btnBack.addEventListener('click', exitShow);
+    btnStop.addEventListener('click', togglePlayPause);
+    btnToggleSound.addEventListener('click', toggleMute);
+    btnToggleInfo.addEventListener('click', toggleInfoDrawer);
+
+    updateTable();
+  </script>
+
+  <!-- СКРИПТ АВТОЗАПУСКА И ВОЗВРАТА В АТЛАС -->
+  <script>
+  function goBackToAtlas() {
+      if (window.history.length > 1 && document.referrer) {
+          window.history.back();
+      } else if (document.referrer) {
+          window.location.href = document.referrer;
+      } else {
+          window.location.href = 'index.html';
+      }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const freqs = urlParams.get('freqs');
+      const autoPlay = urlParams.get('autoPlay');
+
+      if (freqs && autoPlay === '1') {
+          const cleanFreqs = decodeURIComponent(freqs);
+
+          const inputEl = document.getElementById('freqInput') 
+              || document.querySelector('input[type="text"]')
+              || document.querySelector('textarea');
+
+          if (inputEl) {
+              inputEl.value = cleanFreqs;
+              inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+              inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+
+          const playBtn = document.getElementById('btnPlay') 
+              || document.getElementById('btnShowPlay') 
+              || Array.from(document.querySelectorAll('button, input[type="button"]'))
+                  .find(el => el.textContent.includes('Показать') || el.value?.includes('Показать'));
+
+          if (playBtn) {
+              setTimeout(() => {
+                  playBtn.click();
+              }, 300);
+          }
+      }
+  });
+  </script>
+
+</body>
+</html>

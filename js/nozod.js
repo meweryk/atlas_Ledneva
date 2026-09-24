@@ -501,26 +501,60 @@
 
     /* ---------- Обработчики кликов ---------- */
 
-    document.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-action]');
-        if (!btn) return;
-        const action = btn.getAttribute('data-action');
-        const name = btn.getAttribute('data-name') || '';
-        const source = btn.getAttribute('data-source') || '';
-        const freqs = parseFreqs(btn.getAttribute('data-freqs'));
-
-        if (action === 'play') {
-            e.preventDefault();
-            if (currentlyPlayingBtn === btn) {
-                stopAll();
-                return;
+    document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    
+    const action = btn.getAttribute('data-action');
+    const name = btn.getAttribute('data-name') || '';
+    const source = btn.getAttribute('data-source') || '';
+    const rawFreqs = btn.getAttribute('data-freqs') || '';
+    
+    if (action === 'play') {
+        e.preventDefault();
+        
+        if (typeof stopAll === 'function') stopAll();
+        if (!rawFreqs) return;
+        
+        // --- Сохраняем состояние для возврата из визуализатора ---
+        try {
+            // Определяем, в какой категории находится кнопка
+            let categoryTarget = '';
+            const card = btn.closest('.nozode-item');
+            if (card) {
+                const body = card.closest('.accordion-body');
+                if (body) {
+                    const item = body.closest('.accordion-item');
+                    if (item) {
+                        const header = item.querySelector('.accordion-button');
+                        if (header) {
+                            categoryTarget = header.getAttribute('data-bs-target') || '';
+                        }
+                    }
+                }
             }
-            playFrequencies(freqs, btn);
-        } else if (action === 'save') {
-            e.preventDefault();
-            saveWav(name, source, freqs, btn);
-        }
-    });
+            sessionStorage.setItem('atlas_return', JSON.stringify({
+                page: 'nozod',
+                category: categoryTarget,
+                name: name,
+                scrollY: window.scrollY || window.pageYOffset || 0
+            }));
+        } catch (err) { /* ignore */ }
+        
+        // --- Переход в визуализатор (как было раньше) ---
+        const params = new URLSearchParams({
+            freqs: rawFreqs,
+            name: name,
+            autoPlay: '1'
+        });
+        window.location.href = 'LUXE METALLICS.html?' + params.toString();
+        
+    } else if (action === 'save') {
+        e.preventDefault();
+        const freqs = parseFreqs(rawFreqs);
+        saveWav(name, source, freqs, btn);
+    }
+});
 
     // Esc в любом месте приложения — глушим звук
     document.addEventListener('keydown', function (ev) {

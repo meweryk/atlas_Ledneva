@@ -157,6 +157,7 @@ function showToast(message) {
 }
 
 // ========== ЗАВАНТАЖЕННЯ ДАНИХ ==========
+// ========== ЗАВАНТАЖЕННЯ ДАНИХ ==========
 async function loadData() {
     console.log('=== ІНІЦІАЛІЗАЦІЯ АТЛАСУ ===');
     console.log('Префікс додатку:', appStorage.prefix);
@@ -172,7 +173,7 @@ async function loadData() {
     
     let jsonData = [];
     let updatedDescriptionsCount = 0;
-
+    
     const swVersion = await getVersionFromSW();
     const currentVersion = swVersion || APP_VERSION;
     const savedVersion = appStorage.getItem('app_version');
@@ -192,16 +193,16 @@ async function loadData() {
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
     }
-
+    
     const normalizeName = (name) => name.split('/')[0].trim().toLowerCase();
-
+    
     const mergedMap = new Map();
     jsonData.forEach(p => mergedMap.set(p.name, p));
-
+    
     localData.forEach(localPathology => {
         if (mergedMap.has(localPathology.name)) {
             const baseP = mergedMap.get(localPathology.name);
-
+            
             localPathology.point.forEach(lp => {
                 const normLocalName = normalizeName(lp.name);
                 const basePoint = baseP.point.find(bp => normalizeName(bp.name) === normLocalName);
@@ -209,18 +210,18 @@ async function loadData() {
                 if (basePoint) {
                     const localDesc = (lp.description || "").trim();
                     const baseDesc = (basePoint.description || "").trim();
-
+                    
                     if (localDesc.length < 10 && baseDesc.length >= 10) {
                         console.log(`Обновлено описание для: ${lp.name} (совпало с ${basePoint.name})`);
                         lp.description = baseDesc;
                         updatedDescriptionsCount++;
                     }
-
+                    
                     if (lp.name !== basePoint.name && basePoint.name.includes('/')) {
                         console.log(`Обновлено имя точки: ${lp.name} -> ${basePoint.name}`);
                         lp.name = basePoint.name;
                     }
-
+                    
                     if ((!lp.images || lp.images.length === 0) && basePoint.images) {
                         lp.images = basePoint.images;
                     }
@@ -231,12 +232,12 @@ async function loadData() {
             mergedMap.set(localPathology.name, localPathology);
         }
     });
-
+    
     console.log(`Итог: обновлено ${updatedDescriptionsCount} описаний.`);
-
+    
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-
+    
     if (needUpdate) {
         appStorage.setItem('app_version', currentVersion);
         console.log('Оновлено версію додатку:', currentVersion);
@@ -251,6 +252,75 @@ async function loadData() {
     
     afterDataChange();
     showPage('main');
+    
+    // ========== ВОССТАНОВЛЕНИЕ ПОСЛЕ ВОЗВРАТА ИЗ ВИЗУАЛИЗАТОРА ==========
+    restoreReturnState();
+}
+
+// ========== ВОССТАНОВЛЕНИЕ СОСТОЯНИЯ ПОСЛЕ ВИЗУАЛИЗАТОРА ==========
+function restoreReturnState() {
+    let state;
+    try {
+        const raw = sessionStorage.getItem('atlas_return');
+        if (!raw) return;
+        state = JSON.parse(raw);
+        sessionStorage.removeItem('atlas_return');
+    } catch (e) {
+        sessionStorage.removeItem('atlas_return');
+        return;
+    }
+    
+    if (!state || state.page !== 'nozod') return;
+    
+    // Переключаемся на вкладку «Нозод»
+    showPage('nozod');
+    
+    // Ждём, пока nozod.js отрисует аккордеон (контейнер получит дочерние узлы)
+    let tries = 0;
+    const iv = setInterval(() => {
+        tries++;
+        const container = document.getElementById('nozodAccordion');
+        if (container && container.children.length > 0) {
+            clearInterval(iv);
+            revealReturnedNozod(state);
+        } else if (tries > 40) {
+            // Через 4 секунды всё равно пытаемся, даже если контейнер пуст
+            clearInterval(iv);
+            if (typeof state.scrollY === 'number') {
+                window.scrollTo(0, state.scrollY);
+            }
+        }
+    }, 100);
+}
+
+function revealReturnedNozod(state) {
+    // 1. Раскрываем нужную категорию аккордеона
+    if (state.category) {
+        const target = document.querySelector(state.category);
+        if (target && window.bootstrap && window.bootstrap.Collapse) {
+            const col = window.bootstrap.Collapse.getOrCreateInstance(target, { toggle: false });
+            col.show();
+        }
+    }
+    
+    // 2. Скроллим к нужному нозоду (после того как аккордеон раскрылся)
+    setTimeout(() => {
+        if (state.name) {
+            const allNames = document.querySelectorAll('.nozode-item .nozod-name');
+            for (let i = 0; i < allNames.length; i++) {
+                const el = allNames[i];
+                if (el.textContent.indexOf(state.name) !== -1) {
+                    const y = el.getBoundingClientRect().top + window.pageYOffset - 80;
+                    window.scrollTo(0, y);
+                    return;
+                }
+            }
+        }
+        // Если нозод не нашли — возвращаемся к сохранённой позиции скролла
+        if (typeof state.scrollY === 'number') {
+            window.scrollTo(0, state.scrollY);
+        }
+    }, 200);
 }
 
 // ========== ІНШІ ФУНКЦІЇ ==========
