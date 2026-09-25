@@ -18,7 +18,7 @@
     .font-cinzel { font-family: 'Cinzel', serif; }
 
     .glass-panel {
-      background: rgba(18, 20, 29, 0.82);
+      background: rgba(18, 20, 29, 0.92);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -43,7 +43,7 @@
         Акустическо-Оптический Синтезатор
       </h1>
       <p class="text-slate-400 text-xs md:text-sm max-w-2xl mx-auto">
-        Зависимость скорости движения и масштаба пятен от частоты ($0\text{–}3000\text{ Гц}$) • Стереозвук и живой анализатор.
+        Зависимость скорости движения и масштаба пятен от частоты ($0\text{–}3000\text{ Гц}$) • Стереозвук, микрофон и плейлист аудиофайлов.
       </p>
     </header>
 
@@ -124,13 +124,32 @@
     <!-- TOP HEADER CONTAINER -->
     <div class="relative z-20 w-full bg-gradient-to-b from-black/90 via-black/50 to-transparent">
       <div class="p-4 md:p-6 flex justify-between items-start">
-        <div class="flex items-center gap-2 md:gap-3">
+        <div class="flex items-center gap-2 md:gap-3 flex-wrap">
           <button 
             id="btnToggleInfo" 
             title="Информационная панель"
             class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </button>
+
+          <!-- КНОПКА ЗАГРУЗКИ АУДИОФАЙЛОВ (мультивыбор) -->
+          <button 
+            id="btnLoadAudio" 
+            title="Загрузить один или несколько аудиофайлов (MP3, WAV, OGG, M4A…)"
+            class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg>
+          </button>
+
+          <!-- КНОПКА ПЛЕЙЛИСТА -->
+          <button 
+            id="btnPlaylist" 
+            title="Показать / скрыть плейлист"
+            class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer relative"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>
+            <span id="playlistCount" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-bold">0</span>
           </button>
 
           <button 
@@ -180,7 +199,7 @@
         </div>
       </div>
 
-      <!-- ВЕРХНЯЯ БЕГУЩАЯ СТРОКА ЧАСТОТ МИКРОФОНА -->
+      <!-- БЕГУЩАЯ СТРОКА -->
       <div id="micTickerBar" class="hidden w-full bg-slate-950/80 backdrop-blur-md border-t border-b border-amber-500/30 px-4 py-2 transition-all">
         <div class="container mx-auto flex items-center gap-3">
           <span class="text-amber-400 font-bold text-xs uppercase tracking-wider whitespace-nowrap flex items-center gap-2 shrink-0">
@@ -188,11 +207,28 @@
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
             </span>
-            🎤 Микрофон:
+            <span id="micTickerLabel">🎤 Микрофон:</span>
           </span>
           <div id="micTickerContent" class="flex items-center gap-2 overflow-x-auto py-0.5 text-xs font-mono whitespace-nowrap w-full">
             <span class="text-slate-500 italic">Слушаем окружение...</span>
           </div>
+        </div>
+      </div>
+
+      <!-- ПАНЕЛЬ ПЛЕЙЛИСТА -->
+      <div id="playlistPanel" class="hidden absolute top-full left-4 right-4 md:left-auto md:right-6 md:w-96 z-30 glass-panel rounded-2xl p-3 shadow-2xl mt-2">
+        <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
+          <span class="text-xs font-bold font-cinzel text-amber-200 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h10"/></svg>
+            Плейлист <span id="playlistTotal" class="text-slate-400 font-normal normal-case">(0)</span>
+          </span>
+          <button id="btnClearPlaylist" class="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded border border-red-500/40 hover:border-red-400 transition flex items-center gap-1 cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+            Очистить
+          </button>
+        </div>
+        <div id="playlistItems" class="flex flex-col gap-1 max-h-72 overflow-y-auto pr-1">
+          <div class="text-xs text-slate-500 italic text-center py-3">Плейлист пуст. Загрузите файлы кнопкой 🎵</div>
         </div>
       </div>
     </div>
@@ -226,6 +262,10 @@
     <div class="relative z-10 p-4"></div>
   </div>
 
+  <!-- Скрытые элементы -->
+  <input type="file" id="audioFileInput" accept="audio/*" multiple style="display: none;">
+  <audio id="audioPlayer" crossorigin="anonymous"></audio>
+
   <script>
     const SPEED_OF_LIGHT = 299792458;
     const SAMPLE_RATE = 48000;
@@ -239,6 +279,15 @@
     const btnToggleSound = document.getElementById('btnToggleSound');
     const btnToggleInfo = document.getElementById('btnToggleInfo');
     const btnToggleMic = document.getElementById('btnToggleMic');
+    const btnLoadAudio = document.getElementById('btnLoadAudio');
+    const btnPlaylist = document.getElementById('btnPlaylist');
+    const btnClearPlaylist = document.getElementById('btnClearPlaylist');
+    const playlistPanel = document.getElementById('playlistPanel');
+    const playlistItems = document.getElementById('playlistItems');
+    const playlistCount = document.getElementById('playlistCount');
+    const playlistTotal = document.getElementById('playlistTotal');
+    const audioFileInput = document.getElementById('audioFileInput');
+    const audioPlayer = document.getElementById('audioPlayer');
     const iconMicOn = document.getElementById('iconMicOn');
     const iconMicOff = document.getElementById('iconMicOff');
     const iconSoundOn = document.getElementById('iconSoundOn');
@@ -254,6 +303,7 @@
     const glareSpeedLabel = document.getElementById('glareSpeedLabel');
     const micTickerBar = document.getElementById('micTickerBar');
     const micTickerContent = document.getElementById('micTickerContent');
+    const micTickerLabel = document.getElementById('micTickerLabel');
     const ctx = fluidCanvas.getContext('2d');
 
     let audioCtx = null;
@@ -262,12 +312,25 @@
     let activeMerger = null;
     let activeGainNode = null;
 
-    // Анализатор микрофона
+    // Микрофон
     let micStream = null;
     let analyserNode = null;
     let micSourceNode = null;
     let isMicActive = false;
     let micDataArray = null;
+
+    // Аудиофайлы
+    let audioSourceNode = null;
+    let fileAnalyserNode = null;
+    let isFileActive = false;
+    let fileDataArray = null;
+    let currentFileName = '';
+
+    // Плейлист
+    let playlist = [];              // [{ name, url }, ...]
+    let currentTrackIndex = -1;
+
+    // Троттлинг тикера
     let lastTickerUpdate = 0;
     let lastTickerKey = '';
 
@@ -278,10 +341,15 @@
     let isInfoOpen = false;
     let isPlaying = false;
 
-    // ↓↓↓ Ключевая переменная: какой источник сейчас питает визуализацию
-    let vizMode = 'text';   // 'text' — частоты из textarea;  'mic' — живой анализ микрофона
+    let vizMode = 'text'; // 'text' | 'mic' | 'file'
 
     /* ---------- УТИЛИТЫ ---------- */
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
 
     function parseFrequencies() {
       return freqInput.value
@@ -480,7 +548,6 @@
         }
       });
 
-      // Блёстки-частицы присутствуют всегда — они оживляют даже пустой экран
       for (let i = 0; i < 40; i++) {
         particles.push({
           x: Math.random() * w,
@@ -492,7 +559,7 @@
       }
     }
 
-    /* ---------- ПАНЕЛЬ SWATCHES ИЗ ТЕКСТОВЫХ ЧАСТОТ ---------- */
+    /* ---------- ПАНЕЛИ ---------- */
 
     function renderTextSwatches(calculatedData, countText) {
       activeSwatches.innerHTML = '';
@@ -514,39 +581,9 @@
       });
     }
 
-    /* ---------- ТИКЕР МИКРОФОНА (троттлинг) ---------- */
-
-    function updateMicTicker(calculatedData) {
-      if (!micTickerContent) return;
-
-      const now = performance.now();
-      if (now - lastTickerUpdate < 150) return;
-
-      const key = (calculatedData || []).map(i => i.freq).join('|');
-      if (key === lastTickerKey) return;
-      lastTickerKey = key;
-      lastTickerUpdate = now;
-
-      if (!calculatedData || calculatedData.length === 0) {
-        micTickerContent.innerHTML = `<span class="text-slate-500 italic">Слушаем окружение...</span>`;
-        return;
-      }
-
-      micTickerContent.innerHTML = calculatedData.map(item => `
-        <div class="inline-flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-amber-500/30 text-xs font-mono shrink-0 shadow-md">
-          <span class="w-2.5 h-2.5 rounded-full border border-white/40" style="background-color: ${item.color.hex}"></span>
-          <span class="text-amber-200 font-bold">${item.freq} Гц</span>
-          <span class="text-slate-400">•</span>
-          <span class="text-cyan-300">${item.color.hex}</span>
-        </div>
-      `).join('');
-    }
-
-    /* ---------- ПРАВАЯ ПАНЕЛЬ SWATCHES (для микрофона) ---------- */
-
-    function updateMicSwatches(calculatedData) {
+    function updateMicSwatches(calculatedData, label) {
       activeSwatches.innerHTML = '';
-      activeCount.textContent = `${calculatedData.length} частот (микрофон)`;
+      activeCount.textContent = `${calculatedData.length} частот (${label})`;
 
       calculatedData.forEach(item => {
         const badge = document.createElement('div');
@@ -562,9 +599,253 @@
       });
     }
 
-    /* ---------- ВСПОМОГАТЕЛЬНОЕ: ПЕРЕКЛЮЧЕНИЕ ВИЗУАЛИЗАЦИИ НА ТЕКСТОВЫЕ ЧАСТОТЫ ---------- */
-    // Полностью пересоздаёт узлы и swatches из частот в textarea.
-    // Нужно, когда мы уходим из режима микрофона обратно к ручному набору частот.
+    function updateMicTicker(calculatedData) {
+      if (!micTickerContent) return;
+
+      const now = performance.now();
+      if (now - lastTickerUpdate < 150) return;
+
+      const key = (calculatedData || []).map(i => i.freq).join('|');
+      if (key === lastTickerKey) return;
+      lastTickerKey = key;
+      lastTickerUpdate = now;
+
+      if (!calculatedData || calculatedData.length === 0) {
+        micTickerContent.innerHTML = `<span class="text-slate-500 italic">Нет активных частот...</span>`;
+        return;
+      }
+
+      micTickerContent.innerHTML = calculatedData.map(item => `
+        <div class="inline-flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-amber-500/30 text-xs font-mono shrink-0 shadow-md">
+          <span class="w-2.5 h-2.5 rounded-full border border-white/40" style="background-color: ${item.color.hex}"></span>
+          <span class="text-amber-200 font-bold">${item.freq} Гц</span>
+          <span class="text-slate-400">•</span>
+          <span class="text-cyan-300">${item.color.hex}</span>
+        </div>
+      `).join('');
+    }
+
+    /* ---------- ПЛЕЙЛИСТ UI ---------- */
+
+    function updatePlaylistUI() {
+      if (!playlistItems) return;
+
+      if (playlist.length === 0) {
+        playlistCount.classList.add('hidden');
+        playlistTotal.textContent = '(0)';
+        playlistItems.innerHTML = '<div class="text-xs text-slate-500 italic text-center py-3">Плейлист пуст. Загрузите файлы кнопкой 🎵</div>';
+        return;
+      }
+
+      playlistCount.textContent = playlist.length;
+      playlistCount.classList.remove('hidden');
+      playlistTotal.textContent = `(${playlist.length})`;
+
+      playlistItems.innerHTML = playlist.map((track, i) => {
+        const isActive = (i === currentTrackIndex);
+        return `
+          <div class="playlist-item flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${isActive ? 'bg-amber-500/20 border border-amber-500/40' : 'hover:bg-white/10 border border-transparent'}" data-index="${i}">
+            <span class="text-xs font-mono ${isActive ? 'text-amber-300' : 'text-slate-500'} w-5 flex-shrink-0">${isActive ? '▶' : (i + 1) + '.'}</span>
+            <span class="flex-1 text-xs truncate ${isActive ? 'text-amber-200 font-bold' : 'text-slate-300'}">${escapeHtml(track.name)}</span>
+            <button class="playlist-remove text-red-400 hover:text-red-300 p-0.5 flex-shrink-0" data-index="${i}" title="Удалить из плейлиста">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      // Обработчики кликов
+      playlistItems.querySelectorAll('.playlist-item').forEach(el => {
+        el.addEventListener('click', (e) => {
+          if (e.target.closest('.playlist-remove')) return;
+          const idx = parseInt(el.dataset.index);
+          playTrackFromPlaylist(idx);
+        });
+      });
+
+      playlistItems.querySelectorAll('.playlist-remove').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.index);
+          removeTrackFromPlaylist(idx);
+        });
+      });
+    }
+
+    function togglePlaylistPanel() {
+      playlistPanel.classList.toggle('hidden');
+    }
+
+    /* ---------- ПЛЕЙЛИСТ: ЛОГИКА ---------- */
+
+    async function addFilesToPlaylist(files) {
+      if (!files || files.length === 0) return;
+
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx({ sampleRate: SAMPLE_RATE });
+        }
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        const wasPlayingFile = isFileActive;
+        const firstNewIndex = playlist.length;
+
+        for (const file of files) {
+          playlist.push({
+            name: file.name,
+            url: URL.createObjectURL(file)
+          });
+        }
+
+        updatePlaylistUI();
+
+        // Если до этого файл не играл — начинаем с первого добавленного.
+        // Если играл — оставляем как есть, добавляем только в очередь.
+        if (!wasPlayingFile) {
+          await playTrackFromPlaylist(firstNewIndex);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Не удалось загрузить файлы: ' + err.message);
+      }
+    }
+
+    async function playTrackFromPlaylist(index) {
+      if (index < 0 || index >= playlist.length) return;
+
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx({ sampleRate: SAMPLE_RATE });
+        }
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        stopAudio();
+        stopMicrophone();
+
+        currentTrackIndex = index;
+        const track = playlist[index];
+        currentFileName = track.name;
+
+        audioPlayer.src = track.url;
+        // Зацикливаем только если в плейлисте одна запись
+        audioPlayer.loop = (playlist.length === 1);
+        audioPlayer.muted = isMuted;
+
+        if (!audioSourceNode) {
+          audioSourceNode = audioCtx.createMediaElementSource(audioPlayer);
+        }
+        if (!fileAnalyserNode) {
+          fileAnalyserNode = audioCtx.createAnalyser();
+          fileAnalyserNode.fftSize = 2048;
+          fileAnalyserNode.smoothingTimeConstant = 0.85;
+        }
+
+        try { audioSourceNode.disconnect(); } catch(e) {}
+        try { fileAnalyserNode.disconnect(); } catch(e) {}
+
+        audioSourceNode.connect(fileAnalyserNode);
+        fileAnalyserNode.connect(audioCtx.destination);
+
+        await audioPlayer.play();
+
+        isFileActive = true;
+        vizMode = 'file';
+
+        micTickerBar.classList.remove('hidden');
+        if (micTickerLabel) {
+          micTickerLabel.textContent = `🎵 ${track.name}`;
+        }
+
+        if (!isPlaying) {
+          launchShow('file');
+        } else {
+          colorNodes = [];
+          particles = [];
+          activeSwatches.innerHTML = '<div class="text-xs text-slate-500 italic">Анализ аудиофайла…</div>';
+          activeCount.textContent = 'аудиофайл';
+          if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+          }
+          renderFluid();
+        }
+
+        updatePlaylistUI();
+      } catch (err) {
+        console.error(err);
+        alert('Ошибка воспроизведения: ' + err.message);
+      }
+    }
+
+    function removeTrackFromPlaylist(index) {
+      if (index < 0 || index >= playlist.length) return;
+
+      const wasCurrent = (index === currentTrackIndex);
+      const track = playlist[index];
+
+      // Освобождаем URL
+      try { URL.revokeObjectURL(track.url); } catch(e) {}
+
+      playlist.splice(index, 1);
+
+      if (wasCurrent) {
+        // Останавливаем текущее воспроизведение
+        try { audioPlayer.pause(); } catch(e) {}
+        try { audioPlayer.removeAttribute('src'); } catch(e) {}
+        isFileActive = false;
+        currentTrackIndex = -1;
+
+        if (playlist.length > 0) {
+          // Играем следующий (если был последний — играем новый последний)
+          const nextIndex = Math.min(index, playlist.length - 1);
+          playTrackFromPlaylist(nextIndex);
+        } else {
+          // Плейлист пуст — возвращаемся к текстовым частотам
+          if (!isMicActive) {
+            micTickerBar.classList.add('hidden');
+            if (isPlaying) switchVizToText();
+          }
+        }
+      } else if (index < currentTrackIndex) {
+        currentTrackIndex--;
+      }
+
+      updatePlaylistUI();
+    }
+
+    function clearPlaylist() {
+      if (playlist.length === 0) return;
+
+      const wasPlaying = isFileActive;
+
+      // Останавливаем воспроизведение
+      try { audioPlayer.pause(); } catch(e) {}
+      try { audioPlayer.removeAttribute('src'); } catch(e) {}
+      isFileActive = false;
+      currentTrackIndex = -1;
+      currentFileName = '';
+
+      // Освобождаем все URL
+      playlist.forEach(t => {
+        try { URL.revokeObjectURL(t.url); } catch(e) {}
+      });
+      playlist = [];
+
+      if (!isMicActive) {
+        micTickerBar.classList.add('hidden');
+      }
+
+      // Возвращаемся к текстовым частотам
+      if (wasPlaying && isPlaying && !isMicActive) {
+        switchVizToText();
+      }
+
+      updatePlaylistUI();
+    }
+
+    /* ---------- ПЕРЕКЛЮЧЕНИЕ ВИЗУАЛИЗАЦИИ НА ТЕКСТОВЫЕ ЧАСТОТЫ ---------- */
 
     function switchVizToText() {
       const freqs = parseFrequencies();
@@ -577,78 +858,74 @@
       vizMode = 'text';
     }
 
-    /* ---------- АНАЛИЗ МИКРОФОНА ---------- */
+    /* ---------- ЕДИНЫЙ АНАЛИЗ СПЕКТРА ---------- */
 
-    function analyzeMicrophoneInput() {
-      if (!isMicActive || !analyserNode) return;
+    function extractPeakFrequencies(analyser, setter, getter) {
+      if (!analyser || !audioCtx) return [];
 
-      const bufferLength = analyserNode.frequencyBinCount;
-
-      if (!micDataArray || micDataArray.length !== bufferLength) {
-        micDataArray = new Uint8Array(bufferLength);
+      const bufferLength = analyser.frequencyBinCount;
+      let buf = getter();
+      if (!buf || buf.length !== bufferLength) {
+        buf = new Uint8Array(bufferLength);
+        setter(buf);
       }
-      analyserNode.getByteFrequencyData(micDataArray);
-      const dataArray = micDataArray;
+      analyser.getByteFrequencyData(buf);
 
       const sampleRate = audioCtx.sampleRate;
       const binWidth = (sampleRate / 2) / bufferLength;
-
       const maxBin3000 = Math.min(bufferLength, Math.floor(3000 / binWidth));
-      let peaks = [];
 
+      const peaks = [];
       for (let i = 2; i < maxBin3000 - 2; i++) {
-        const val = dataArray[i];
-        if (val > 65 && val > dataArray[i - 1] && val > dataArray[i + 1]) {
-          const freq = Math.round(i * binWidth);
-          peaks.push({ freq, amp: val });
+        const val = buf[i];
+        if (val > 65 && val > buf[i - 1] && val > buf[i + 1]) {
+          peaks.push({ freq: Math.round(i * binWidth), amp: val });
         }
       }
 
       peaks.sort((a, b) => b.amp - a.amp);
-      const topPeaks = peaks.slice(0, 6);
+      return peaks.slice(0, 6);
+    }
 
-      if (topPeaks.length > 0) {
-        const calculatedData = topPeaks.map(p => calculateSpectrum(p.freq));
-
-        updateMicTicker(calculatedData);
-        updateMicSwatches(calculatedData);
-
-        if (colorNodes.length === 0) {
-          initColorNodes(calculatedData);
-          vizMode = 'mic';
-        } else {
-          const requiredNodes = calculatedData.length * 2;
-
-          if (colorNodes.length > requiredNodes) {
-            colorNodes.length = requiredNodes;
-          }
-
-          calculatedData.forEach((item, idx) => {
-            const n1 = colorNodes[idx * 2];
-            const n2 = colorNodes[idx * 2 + 1];
-            const spotRadius = Math.min(fluidCanvas.width, fluidCanvas.height) * 0.45 * item.sizeCoeff;
-
-            if (n1) {
-              n1.targetR = item.color.r;
-              n1.targetG = item.color.g;
-              n1.targetB = item.color.b;
-              n1.targetBaseRadius = spotRadius;
-            }
-            if (n2) {
-              n2.targetR = item.color.r;
-              n2.targetG = item.color.g;
-              n2.targetB = item.color.b;
-              n2.targetBaseRadius = spotRadius;
-            }
-          });
-        }
-      } else {
+    function updateVizFromPeaks(calculatedData, sourceLabel) {
+      if (calculatedData.length === 0) {
         updateMicTicker([]);
-        // Плавно уводим пятна в тёмный тон при тишине
         colorNodes.forEach(n => {
           n.targetR = 20;
           n.targetG = 25;
           n.targetB = 35;
+        });
+        return;
+      }
+
+      updateMicTicker(calculatedData);
+      updateMicSwatches(calculatedData, sourceLabel);
+
+      if (colorNodes.length === 0) {
+        initColorNodes(calculatedData);
+      } else {
+        const requiredNodes = calculatedData.length * 2;
+        if (colorNodes.length > requiredNodes) {
+          colorNodes.length = requiredNodes;
+        }
+
+        calculatedData.forEach((item, idx) => {
+          const n1 = colorNodes[idx * 2];
+          const n2 = colorNodes[idx * 2 + 1];
+          const spotRadius = Math.min(fluidCanvas.width, fluidCanvas.height) * 0.45 * item.sizeCoeff;
+
+          if (n1) {
+            n1.targetR = item.color.r;
+            n1.targetG = item.color.g;
+            n1.targetB = item.color.b;
+            n1.targetBaseRadius = spotRadius;
+          }
+          if (n2) {
+            n2.targetR = item.color.r;
+            n2.targetG = item.color.g;
+            n2.targetB = item.color.b;
+            n2.targetBaseRadius = spotRadius;
+          }
         });
       }
     }
@@ -658,8 +935,22 @@
     function renderFluid() {
       if (!isPlaying) return;
 
-      if (isMicActive) {
-        analyzeMicrophoneInput();
+      if (isMicActive && analyserNode) {
+        const peaks = extractPeakFrequencies(
+          analyserNode,
+          v => { micDataArray = v; },
+          () => micDataArray
+        );
+        const calc = peaks.map(p => calculateSpectrum(p.freq));
+        updateVizFromPeaks(calc, 'микрофон');
+      } else if (isFileActive && fileAnalyserNode) {
+        const peaks = extractPeakFrequencies(
+          fileAnalyserNode,
+          v => { fileDataArray = v; },
+          () => fileDataArray
+        );
+        const calc = peaks.map(p => calculateSpectrum(p.freq));
+        updateVizFromPeaks(calc, 'файл');
       }
 
       const w = fluidCanvas.width;
@@ -735,8 +1026,19 @@
         }
 
         stopAudio();
+        // Не останавливаем файл полностью — просто пауза, чтобы можно было вернуться
+        if (isFileActive) {
+          try { audioPlayer.pause(); } catch(e) {}
+        }
 
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          },
+          video: false
+        });
         micSourceNode = audioCtx.createMediaStreamSource(micStream);
 
         analyserNode = audioCtx.createAnalyser();
@@ -749,12 +1051,11 @@
         iconMicOff.classList.add('hidden');
         iconMicOn.classList.remove('hidden');
         micTickerBar.classList.remove('hidden');
+        if (micTickerLabel) micTickerLabel.textContent = '🎤 Микрофон:';
 
         if (!isPlaying) {
-          launchShow(true);
+          launchShow('mic');
         } else {
-          // Микрофон включён при активном цикле — очищаем старые узлы,
-          // чтобы анализатор начал с чистого листа
           colorNodes = [];
           particles = [];
           vizMode = 'mic';
@@ -789,18 +1090,24 @@
       isMicActive = false;
       iconMicOff.classList.remove('hidden');
       iconMicOn.classList.add('hidden');
-      micTickerBar.classList.add('hidden');
 
-      // ─── ВОЗВРАЩАЕМ ВИЗУАЛИЗАЦИЮ К ТЕКСТОВЫМ ЧАСТОТАМ ───
-      // Если цикл активен и мы только что вышли из микрофона —
-      // пересоздаём узлы из textarea, чтобы пятна не оставались
-      // в последнем (возможно, тёмном) состоянии микрофона.
       if (wasMic && isPlaying && vizMode === 'mic') {
-        switchVizToText();
+        if (isFileActive) {
+          // Файл был на паузе — возобновим его
+          try { audioPlayer.play(); } catch(e) {}
+          vizMode = 'file';
+          micTickerBar.classList.remove('hidden');
+          if (micTickerLabel && currentFileName) {
+            micTickerLabel.textContent = `🎵 ${currentFileName}`;
+          }
+        } else {
+          micTickerBar.classList.add('hidden');
+          switchVizToText();
+        }
       }
     }
 
-    /* ---------- ЗВУК ---------- */
+    /* ---------- ЗВУК (осцилляторы) ---------- */
 
     function updateGlareSpeedLabel() {
       const mult = parseFloat(glareMultiplier.value) || 2.4;
@@ -831,7 +1138,7 @@
 
     function startAudio(freqs) {
       stopAudio();
-      if (!freqs || freqs.length === 0 || isMicActive) return;
+      if (!freqs || freqs.length === 0 || isMicActive || isFileActive) return;
 
       if (!audioCtx) {
         const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -879,7 +1186,10 @@
         // ПАУЗА
         isPlaying = false;
         stopAudio();
-        stopMicrophone();
+        if (isMicActive) stopMicrophone();
+        if (isFileActive) {
+          try { audioPlayer.pause(); } catch(e) {}
+        }
         if (animationFrameId) {
           cancelAnimationFrame(animationFrameId);
           animationFrameId = null;
@@ -890,21 +1200,23 @@
         btnStop.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
       } else {
         // PLAY
-        const freqs = parseFrequencies();
-        if (freqs.length === 0 && !isMicActive) return;
         isPlaying = true;
         iconPlayResume.classList.add('hidden');
         iconPause.classList.remove('hidden');
         btnStop.classList.remove('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
         btnStop.classList.add('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
 
-        if (!isMicActive) {
+        if (isFileActive) {
+          try { audioPlayer.play(); } catch(e) {}
+        } else if (isMicActive) {
+          // микрофон — просто продолжаем
+        } else {
+          const freqs = parseFrequencies();
+          if (freqs.length === 0) {
+            isPlaying = false;
+            return;
+          }
           startAudio(freqs);
-
-          // ─── ПЕРЕСОЗДАЁМ ВИЗУАЛЬНЫЕ УЗЛЫ ───
-          // Ключевая правка: пересоздаём ВСЕГДА, если только что вышли
-          // из микрофона (vizMode !== 'text') ИЛИ узлов нет.
-          // Так звук из textarea гарантированно получает свою визуализацию.
           if (vizMode !== 'text' || colorNodes.length === 0) {
             switchVizToText();
           }
@@ -924,12 +1236,14 @@
         iconSoundOn.classList.add('hidden');
         iconSoundOff.classList.remove('hidden');
         if (activeGainNode && audioCtx) activeGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        if (audioPlayer) audioPlayer.muted = true;
       } else {
         iconSoundOn.classList.remove('hidden');
         iconSoundOff.classList.add('hidden');
         const freqs = parseFrequencies();
         const masterVol = 0.25 / Math.sqrt(freqs.length || 1);
         if (activeGainNode && audioCtx) activeGainNode.gain.setValueAtTime(masterVol, audioCtx.currentTime);
+        if (audioPlayer) audioPlayer.muted = false;
       }
     }
 
@@ -944,30 +1258,36 @@
       }
     }
 
-    function launchShow(fromMic = false) {
+    function launchShow(mode) {
+      if (mode === undefined) mode = 'text';
       const freqs = parseFrequencies();
 
-      if (!fromMic && isMicActive) {
-        stopMicrophone();
+      if (mode === 'text' && (isMicActive || isFileActive)) {
+        if (isMicActive) stopMicrophone();
+        if (isFileActive) {
+          try { audioPlayer.pause(); } catch(e) {}
+          isFileActive = false;
+          currentTrackIndex = -1;
+          micTickerBar.classList.add('hidden');
+        }
+        mode = 'text';
       }
 
-      const isMicMode = fromMic || isMicActive;
+      const isSpecialMode = (mode === 'mic' || mode === 'file');
 
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
       }
 
-      if (isMicMode) {
-        // === МИКРОФОН: не используем частоты из textarea ===
+      if (isSpecialMode) {
         colorNodes = [];
         particles = [];
-        vizMode = 'mic';
+        vizMode = mode;
         activeSwatches.innerHTML =
-          '<div class="text-xs text-slate-500 italic">Ожидание звука с микрофона…</div>';
-        activeCount.textContent = 'микрофон (живой анализ)';
+          '<div class="text-xs text-slate-500 italic">Ожидание сигнала…</div>';
+        activeCount.textContent = (mode === 'mic') ? 'микрофон (живой анализ)' : 'аудиофайл';
       } else {
-        // === ОБЫЧНЫЙ РЕЖИМ ===
         switchVizToText();
       }
 
@@ -980,7 +1300,7 @@
 
       renderFluid();
 
-      if (!isMicMode && freqs.length > 0) {
+      if (mode === 'text' && freqs.length > 0) {
         startAudio(freqs);
       }
     }
@@ -997,7 +1317,16 @@
       stopAudio();
       stopMicrophone();
 
+      // Останавливаем файл, но не очищаем плейлист
+      if (isFileActive) {
+        try { audioPlayer.pause(); } catch(e) {}
+        isFileActive = false;
+        currentTrackIndex = -1;
+        micTickerBar.classList.add('hidden');
+      }
+
       if (isInfoOpen) toggleInfoDrawer();
+      playlistPanel.classList.add('hidden');
     }
 
     /* ---------- СОБЫТИЯ ---------- */
@@ -1012,7 +1341,54 @@
       });
     });
 
-    btnPlay.addEventListener('click', () => launchShow(false));
+    // Кнопка загрузки файлов → открываем системный выбор
+    btnLoadAudio.addEventListener('click', () => {
+      audioFileInput.click();
+    });
+
+    // Файлы выбраны (мультивыбор)
+    audioFileInput.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+      if (files.length > 0) {
+        addFilesToPlaylist(files);
+      }
+      e.target.value = '';
+    });
+
+    // Кнопка плейлиста — открыть/закрыть панель
+    btnPlaylist.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePlaylistPanel();
+    });
+
+    // Очистить плейлист
+    btnClearPlaylist.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (playlist.length === 0) return;
+      if (confirm('Очистить плейлист и остановить воспроизведение?')) {
+        clearPlaylist();
+      }
+    });
+
+    // Клик по канвасу/фону — закрыть панель плейлиста
+    document.addEventListener('click', (e) => {
+      if (playlistPanel.classList.contains('hidden')) return;
+      const inPanel = playlistPanel.contains(e.target);
+      const onBtn = btnPlaylist.contains(e.target);
+      if (!inPanel && !onBtn) {
+        playlistPanel.classList.add('hidden');
+      }
+    });
+
+    // Дошли до конца трека — играем следующий
+    audioPlayer.addEventListener('ended', () => {
+      if (playlist.length > 1 && currentTrackIndex >= 0) {
+        const nextIndex = (currentTrackIndex + 1) % playlist.length;
+        playTrackFromPlaylist(nextIndex);
+      }
+    });
+
+    btnPlay.addEventListener('click', () => launchShow('text'));
     btnBack.addEventListener('click', exitShow);
     btnStop.addEventListener('click', togglePlayPause);
     btnToggleSound.addEventListener('click', toggleMute);
@@ -1020,6 +1396,7 @@
     btnToggleMic.addEventListener('click', toggleMicrophone);
 
     updateTable();
+    updatePlaylistUI();
   </script>
 
   <!-- СКРИПТ АВТОЗАПУСКА И ВОЗВРАТА В АТЛАС -->
