@@ -133,7 +133,17 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           </button>
 
-          <!-- КНОПКА ЗАГРУЗКИ АУДИОФАЙЛОВ (мультивыбор) -->
+          <!-- КНОПКА ЗВЁЗДНОГО НЕБА -->
+          <button 
+            id="btnToggleStars" 
+            title="Звёздное небо"
+            class="hover:bg-white/20 active:scale-95 border p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+            style="background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.4); color: #fcd34d;"
+          >
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l1.5 5.5L19 9l-5.5 1.5L12 16l-1.5-5.5L5 9l5.5-1.5L12 2zm6 14l.75 2.75L21.5 19l-2.75.75L18 22.5l-.75-2.75L14.5 19l2.75-.75L18 16zM5 14l.5 1.83L7.33 16.33 5.5 16.83 5 18.66l-.5-1.83L2.67 16.33 4.5 15.83 5 14z"/></svg>
+          </button>
+
+          <!-- КНОПКА ЗАГРУЗКИ АУДИОФАЙЛОВ -->
           <button 
             id="btnLoadAudio" 
             title="Загрузить один или несколько аудиофайлов (MP3, WAV, OGG, M4A…)"
@@ -265,6 +275,8 @@
   <!-- Скрытые элементы -->
   <input type="file" id="audioFileInput" accept="audio/*" multiple style="display: none;">
   <audio id="audioPlayer" crossorigin="anonymous"></audio>
+  
+  <script src="./js/star.js"></script>
 
   <script>
     const SPEED_OF_LIGHT = 299792458;
@@ -279,6 +291,7 @@
     const btnToggleSound = document.getElementById('btnToggleSound');
     const btnToggleInfo = document.getElementById('btnToggleInfo');
     const btnToggleMic = document.getElementById('btnToggleMic');
+    const btnToggleStars = document.getElementById('btnToggleStars');
     const btnLoadAudio = document.getElementById('btnLoadAudio');
     const btnPlaylist = document.getElementById('btnPlaylist');
     const btnClearPlaylist = document.getElementById('btnClearPlaylist');
@@ -327,7 +340,7 @@
     let currentFileName = '';
 
     // Плейлист
-    let playlist = [];              // [{ name, url }, ...]
+    let playlist = [];
     let currentTrackIndex = -1;
 
     // Троттлинг тикера
@@ -341,7 +354,16 @@
     let isInfoOpen = false;
     let isPlaying = false;
 
-    let vizMode = 'text'; // 'text' | 'mic' | 'file'
+    let vizMode = 'text';
+
+    // Звёздное небо
+    let showStars = true;
+    let constellationStars = [];
+    let backgroundStars = [];
+
+    // Логические размеры canvas (без DPR)
+    let canvasW = 0;
+    let canvasH = 0;
 
     /* ---------- УТИЛИТЫ ---------- */
 
@@ -506,10 +528,105 @@
     }
 
     function resizeCanvas() {
-      fluidCanvas.width = window.innerWidth;
-      fluidCanvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvasW = window.innerWidth;
+      canvasH = window.innerHeight;
+
+      fluidCanvas.width = Math.floor(canvasW * dpr);
+      fluidCanvas.height = Math.floor(canvasH * dpr);
+      fluidCanvas.style.width = canvasW + 'px';
+      fluidCanvas.style.height = canvasH + 'px';
+
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
     }
     window.addEventListener('resize', resizeCanvas);
+
+    /* ---------- ЗВЁЗДНОЕ НЕБО ---------- */
+
+    function initStars() {
+      // Реальные пропорции 7 звёзд Большой Медведицы,
+      // пересчитанные из RA/Dec в нормализованные x/y.
+      // Порядок: чаша ковша (4 звезды) + ручка (3 звезды).
+      const uma = [
+        { x: 0.108, y: 0.30, size: 3.2, base: 0.95 }, // Дубхе (α)
+        { x: 0.100, y: 0.47, size: 2.8, base: 0.90 }, // Мерак (β)
+        { x: 0.350, y: 0.56, size: 2.4, base: 0.85 }, // Фекда (γ)
+        { x: 0.460, y: 0.45, size: 2.2, base: 0.78 }, // Мегрец (δ)
+        { x: 0.640, y: 0.48, size: 3.2, base: 0.96 }, // Алиот (ε)
+        { x: 0.790, y: 0.52, size: 2.6, base: 0.85 }, // Мицар (ζ)
+        { x: 0.900, y: 0.70, size: 3.0, base: 0.94 }  // Бенетнаш (η)
+      ];
+
+      constellationStars = uma.map(s => ({
+        xRel: s.x,
+        yRel: s.y,
+        size: s.size,
+        base: s.base,
+        phase: Math.random() * Math.PI * 2,
+        speed: 1.5 + Math.random() * 2.0,       // 1.5–3.5 — заметное мерцание
+        amplitude: 0.25 + Math.random() * 0.20  // 25–45% от базовой яркости
+      }));
+
+      // Фоновые звёзды — 35 мелких
+      backgroundStars = [];
+      for (let i = 0; i < 35; i++) {
+        backgroundStars.push({
+          xRel: Math.random(),
+          yRel: Math.random(),
+          size: 0.4 + Math.random() * 0.5,
+          base: 0.15 + Math.random() * 0.20,
+          phase: Math.random() * Math.PI * 2,
+          speed: 1.0 + Math.random() * 3.0,
+          amplitude: 0.15 + Math.random() * 0.20
+        });
+      }
+    }
+
+    function drawStars(time) {
+      if (!showStars) return;
+
+      const w = canvasW;
+      const h = canvasH;
+
+      // Фоновые звёзды
+      for (let i = 0; i < backgroundStars.length; i++) {
+        const s = backgroundStars[i];
+        const twinkle = Math.sin(time * s.speed + s.phase) * s.amplitude;
+        const a = Math.max(0, s.base + twinkle);
+
+        ctx.fillStyle = `rgba(200, 215, 255, ${a})`;
+        ctx.beginPath();
+        ctx.arc(s.xRel * w, s.yRel * h, s.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Крупные звёзды Большой Медведицы
+      for (let i = 0; i < constellationStars.length; i++) {
+        const s = constellationStars[i];
+        const x = s.xRel * w;
+        const y = s.yRel * h;
+        const twinkle = Math.sin(time * s.speed + s.phase) * s.amplitude;
+        const a = Math.max(0.15, Math.min(1, s.base + twinkle));
+
+        // Ореол
+        const haloR = s.size * 3.5;
+        const grad = ctx.createRadialGradient(x, y, 0, x, y, haloR);
+        grad.addColorStop(0,    `rgba(220, 235, 255, ${a * 0.55})`);
+        grad.addColorStop(0.45, `rgba(170, 200, 255, ${a * 0.15})`);
+        grad.addColorStop(1,    `rgba(120, 160, 240, 0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(x, y, haloR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ядро
+        ctx.fillStyle = `rgba(255, 255, 255, ${a})`;
+        ctx.beginPath();
+        ctx.arc(x, y, s.size * 0.55, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
 
     /* ---------- ЦВЕТОВЫЕ УЗЛЫ И ЧАСТИЦЫ ---------- */
 
@@ -518,8 +635,8 @@
       colorNodes = [];
       particles = [];
 
-      const w = fluidCanvas.width;
-      const h = fluidCanvas.height;
+      const w = canvasW;
+      const h = canvasH;
 
       calculatedData.forEach((item) => {
         const freqSpeedFactor = 5.25 / item.basePeriod;
@@ -548,11 +665,12 @@
         }
       });
 
-      for (let i = 0; i < 40; i++) {
+      // 15 блёсток — меньше шума рядом со звёздами
+      for (let i = 0; i < 15; i++) {
         particles.push({
           x: Math.random() * w,
           y: Math.random() * h,
-          size: Math.random() * 2.5 + 1,
+          size: Math.random() * 2.0 + 1.0,
           alpha: Math.random(),
           speed: Math.random() * 0.02 + 0.005
         });
@@ -654,7 +772,6 @@
         `;
       }).join('');
 
-      // Обработчики кликов
       playlistItems.querySelectorAll('.playlist-item').forEach(el => {
         el.addEventListener('click', (e) => {
           if (e.target.closest('.playlist-remove')) return;
@@ -700,8 +817,6 @@
 
         updatePlaylistUI();
 
-        // Если до этого файл не играл — начинаем с первого добавленного.
-        // Если играл — оставляем как есть, добавляем только в очередь.
         if (!wasPlayingFile) {
           await playTrackFromPlaylist(firstNewIndex);
         }
@@ -729,7 +844,6 @@
         currentFileName = track.name;
 
         audioPlayer.src = track.url;
-        // Зацикливаем только если в плейлисте одна запись
         audioPlayer.loop = (playlist.length === 1);
         audioPlayer.muted = isMuted;
 
@@ -785,24 +899,20 @@
       const wasCurrent = (index === currentTrackIndex);
       const track = playlist[index];
 
-      // Освобождаем URL
       try { URL.revokeObjectURL(track.url); } catch(e) {}
 
       playlist.splice(index, 1);
 
       if (wasCurrent) {
-        // Останавливаем текущее воспроизведение
         try { audioPlayer.pause(); } catch(e) {}
         try { audioPlayer.removeAttribute('src'); } catch(e) {}
         isFileActive = false;
         currentTrackIndex = -1;
 
         if (playlist.length > 0) {
-          // Играем следующий (если был последний — играем новый последний)
           const nextIndex = Math.min(index, playlist.length - 1);
           playTrackFromPlaylist(nextIndex);
         } else {
-          // Плейлист пуст — возвращаемся к текстовым частотам
           if (!isMicActive) {
             micTickerBar.classList.add('hidden');
             if (isPlaying) switchVizToText();
@@ -820,14 +930,12 @@
 
       const wasPlaying = isFileActive;
 
-      // Останавливаем воспроизведение
       try { audioPlayer.pause(); } catch(e) {}
       try { audioPlayer.removeAttribute('src'); } catch(e) {}
       isFileActive = false;
       currentTrackIndex = -1;
       currentFileName = '';
 
-      // Освобождаем все URL
       playlist.forEach(t => {
         try { URL.revokeObjectURL(t.url); } catch(e) {}
       });
@@ -837,7 +945,6 @@
         micTickerBar.classList.add('hidden');
       }
 
-      // Возвращаемся к текстовым частотам
       if (wasPlaying && isPlaying && !isMicActive) {
         switchVizToText();
       }
@@ -912,7 +1019,7 @@
         calculatedData.forEach((item, idx) => {
           const n1 = colorNodes[idx * 2];
           const n2 = colorNodes[idx * 2 + 1];
-          const spotRadius = Math.min(fluidCanvas.width, fluidCanvas.height) * 0.45 * item.sizeCoeff;
+          const spotRadius = Math.min(canvasW, canvasH) * 0.45 * item.sizeCoeff;
 
           if (n1) {
             n1.targetR = item.color.r;
@@ -953,12 +1060,15 @@
         updateVizFromPeaks(calc, 'файл');
       }
 
-      const w = fluidCanvas.width;
-      const h = fluidCanvas.height;
+      const w = canvasW;
+      const h = canvasH;
       const sliderCoeff = parseFloat(glareMultiplier.value) || 2.4;
 
       ctx.fillStyle = '#050608';
       ctx.fillRect(0, 0, w, h);
+
+      // Звёздное небо рисуется ПОД цветными пятнами
+      drawStars(performance.now() / 1000);
 
       ctx.globalCompositeOperation = 'screen';
       colorNodes.forEach(node => {
@@ -1026,7 +1136,6 @@
         }
 
         stopAudio();
-        // Не останавливаем файл полностью — просто пауза, чтобы можно было вернуться
         if (isFileActive) {
           try { audioPlayer.pause(); } catch(e) {}
         }
@@ -1093,7 +1202,6 @@
 
       if (wasMic && isPlaying && vizMode === 'mic') {
         if (isFileActive) {
-          // Файл был на паузе — возобновим его
           try { audioPlayer.play(); } catch(e) {}
           vizMode = 'file';
           micTickerBar.classList.remove('hidden');
@@ -1183,7 +1291,6 @@
 
     function togglePlayPause() {
       if (isPlaying) {
-        // ПАУЗА
         isPlaying = false;
         stopAudio();
         if (isMicActive) stopMicrophone();
@@ -1199,7 +1306,6 @@
         btnStop.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
         btnStop.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
       } else {
-        // PLAY
         isPlaying = true;
         iconPlayResume.classList.add('hidden');
         iconPause.classList.remove('hidden');
@@ -1209,7 +1315,7 @@
         if (isFileActive) {
           try { audioPlayer.play(); } catch(e) {}
         } else if (isMicActive) {
-          // микрофон — просто продолжаем
+          // микрофон — продолжаем
         } else {
           const freqs = parseFrequencies();
           if (freqs.length === 0) {
@@ -1317,7 +1423,6 @@
       stopAudio();
       stopMicrophone();
 
-      // Останавливаем файл, но не очищаем плейлист
       if (isFileActive) {
         try { audioPlayer.pause(); } catch(e) {}
         isFileActive = false;
@@ -1341,12 +1446,29 @@
       });
     });
 
-    // Кнопка загрузки файлов → открываем системный выбор
+    // Кнопка звёздного неба — состояние через inline-style, т.к. Tailwind CDN
+    // не генерирует классы, появляющиеся только динамически
+    function updateStarsButton() {
+      if (showStars) {
+        btnToggleStars.style.background = 'rgba(245, 158, 11, 0.2)';
+        btnToggleStars.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+        btnToggleStars.style.color = '#fcd34d';
+      } else {
+        btnToggleStars.style.background = 'rgba(255, 255, 255, 0.05)';
+        btnToggleStars.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        btnToggleStars.style.color = 'rgba(255, 255, 255, 0.35)';
+      }
+    }
+
+    btnToggleStars.addEventListener('click', () => {
+      showStars = !showStars;
+      updateStarsButton();
+    });
+
     btnLoadAudio.addEventListener('click', () => {
       audioFileInput.click();
     });
 
-    // Файлы выбраны (мультивыбор)
     audioFileInput.addEventListener('change', (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {
@@ -1355,13 +1477,11 @@
       e.target.value = '';
     });
 
-    // Кнопка плейлиста — открыть/закрыть панель
     btnPlaylist.addEventListener('click', (e) => {
       e.stopPropagation();
       togglePlaylistPanel();
     });
 
-    // Очистить плейлист
     btnClearPlaylist.addEventListener('click', (e) => {
       e.stopPropagation();
       if (playlist.length === 0) return;
@@ -1370,7 +1490,6 @@
       }
     });
 
-    // Клик по канвасу/фону — закрыть панель плейлиста
     document.addEventListener('click', (e) => {
       if (playlistPanel.classList.contains('hidden')) return;
       const inPanel = playlistPanel.contains(e.target);
@@ -1380,7 +1499,6 @@
       }
     });
 
-    // Дошли до конца трека — играем следующий
     audioPlayer.addEventListener('ended', () => {
       if (playlist.length > 1 && currentTrackIndex >= 0) {
         const nextIndex = (currentTrackIndex + 1) % playlist.length;
@@ -1395,8 +1513,11 @@
     btnToggleInfo.addEventListener('click', toggleInfoDrawer);
     btnToggleMic.addEventListener('click', toggleMicrophone);
 
+    // Инициализация
     updateTable();
     updatePlaylistUI();
+    initStars();
+    updateStarsButton();
   </script>
 
   <!-- СКРИПТ АВТОЗАПУСКА И ВОЗВРАТА В АТЛАС -->
