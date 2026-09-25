@@ -26,7 +26,7 @@
 
     .gold-glow { box-shadow: 0 0 25px rgba(212, 175, 55, 0.2); }
 
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
     ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
   </style>
@@ -43,7 +43,7 @@
         Акустическо-Оптический Синтезатор
       </h1>
       <p class="text-slate-400 text-xs md:text-sm max-w-2xl mx-auto">
-        Зависимость скорости движения и масштаба пятен от частоты ($0\text{–}3000\text{ Гц}$) • Стереозвук со сдвигом фаз 90°.
+        Зависимость скорости движения и масштаба пятен от частоты ($0\text{–}3000\text{ Гц}$) • Стереозвук и живой анализатор.
       </p>
     </header>
 
@@ -78,23 +78,14 @@
         <button class="preset-btn px-2.5 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/30 transition" data-val="1059; 1101; 1148; 1185; 1225; 1298; 2203; 2371">❄️ Серебро (оттенки)</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 transition" data-val="879; 1170; 1260;447; 457; 470; 488; 510; 554; 590; 610; 640; 665">🦪 Перламутр</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="147; 258; 369; 432; 528; 639; 741; 852; 963">Сольфеджио</button>
-  
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="364.5; 729; 1350.108; 1093.5; 1458">Колокол</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 329.63; 392.00; 493.88">C maj7</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="220.00; 261.63; 329.63; 392.00">A min7</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="293.66; 349.23; 440.00">Dm</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="392.00; 493.88; 587.33">G мажор</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="329.63; 392.00; 493.88">Em</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 329.63; 415.30">C aug (+)</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 311.13; 369.99">C dim (°)</button>
-
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 392.00; 587.33">C квинта</button>
       </div>
     </div>
@@ -130,53 +121,79 @@
   <div id="fullscreen-overlay" class="fixed inset-0 z-50 opacity-0 pointer-events-none transition-opacity duration-500 flex flex-col justify-between">
     <canvas id="fluidCanvas" class="absolute inset-0 w-full h-full object-cover"></canvas>
 
-    <!-- Top Action Bar -->
-    <div class="relative z-20 p-4 md:p-6 flex justify-between items-start bg-gradient-to-b from-black/90 via-black/40 to-transparent">
-      <div class="flex items-center gap-2 md:gap-3">
-        <button 
-          id="btnToggleInfo" 
-          title="Информационная панель"
-          class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        </button>
+    <!-- TOP HEADER CONTAINER -->
+    <div class="relative z-20 w-full bg-gradient-to-b from-black/90 via-black/50 to-transparent">
+      <div class="p-4 md:p-6 flex justify-between items-start">
+        <div class="flex items-center gap-2 md:gap-3">
+          <button 
+            id="btnToggleInfo" 
+            title="Информационная панель"
+            class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </button>
 
-        <button 
-          id="btnToggleSound" 
-          title="Включить / Выключить звук"
-          class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center"
-        >
-          <svg id="iconSoundOn" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.314M6.5 9.5H3a1 1 0 00-1 1v3a1 1 0 001 1h3.5l4 4.5A1 1 0 0012 18V6a1 1 0 00-1.5-.866L6.5 9.5z"/></svg>
-          <svg id="iconSoundOff" class="w-5 h-5 hidden text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-dasharray="2 2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
-        </button>
+          <button 
+            id="btnToggleMic" 
+            title="Анализ входящего звука (Микрофон)"
+            class="bg-white/10 hover:bg-white/20 active:scale-95 text-white border border-white/20 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+          >
+            <svg id="iconMicOff" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 016 0v6a3 3 0 01-3 3z"/></svg>
+            <svg id="iconMicOn" class="w-5 h-5 hidden text-red-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 016 0v6a3 3 0 01-3 3z"/></svg>
+          </button>
 
-        <button 
-          id="btnStop" 
-          title="Старт / Пауза"
-          class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
-        >
-          <svg id="iconPause" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-          <svg id="iconPlayResume" class="w-5 h-5 fill-current hidden" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-        </button>
+          <button 
+            id="btnToggleSound" 
+            title="Включить / Выключить звук"
+            class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+          >
+            <svg id="iconSoundOn" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M17.95 6.05a8 8 0 010 11.314M6.5 9.5H3a1 1 0 00-1 1v3a1 1 0 001 1h3.5l4 4.5A1 1 0 0012 18V6a1 1 0 00-1.5-.866L6.5 9.5z"/></svg>
+            <svg id="iconSoundOff" class="w-5 h-5 hidden text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-dasharray="2 2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+          </button>
+
+          <button 
+            id="btnStop" 
+            title="Старт / Пауза"
+            class="bg-amber-500/20 hover:bg-amber-500/30 active:scale-95 text-amber-300 border border-amber-500/40 p-2.5 rounded-full backdrop-blur-md transition flex items-center justify-center cursor-pointer"
+          >
+            <svg id="iconPause" class="w-5 h-5 fill-current" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            <svg id="iconPlayResume" class="w-5 h-5 fill-current hidden" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2 items-end">
+          <button 
+            id="btnBack" 
+            class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Вернуться
+          </button>
+
+          <button 
+            onclick="goBackToAtlas()" 
+            class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Атлас
+          </button>
+        </div>
       </div>
 
-      <!-- Блок кнопок справа -->
-      <div class="flex flex-col gap-2 items-end">
-        <button 
-          id="btnBack" 
-          class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-          Вернуться
-        </button>
-
-        <button 
-          onclick="goBackToAtlas()" 
-          class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-5 py-2 rounded-full font-medium text-sm transition hover:scale-105 shadow-xl flex items-center justify-center gap-2 cursor-pointer w-full"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-          Атлас
-        </button>
+      <!-- ВЕРХНЯЯ БЕГУЩАЯ СТРОКА ЧАСТОТ МИКРОФОНА -->
+      <div id="micTickerBar" class="hidden w-full bg-slate-950/80 backdrop-blur-md border-t border-b border-amber-500/30 px-4 py-2 transition-all">
+        <div class="container mx-auto flex items-center gap-3">
+          <span class="text-amber-400 font-bold text-xs uppercase tracking-wider whitespace-nowrap flex items-center gap-2 shrink-0">
+            <span class="relative flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            🎤 Микрофон:
+          </span>
+          <div id="micTickerContent" class="flex items-center gap-2 overflow-x-auto py-0.5 text-xs font-mono whitespace-nowrap w-full">
+            <span class="text-slate-500 italic">Слушаем окружение...</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -221,6 +238,9 @@
     const iconPlayResume = document.getElementById('iconPlayResume');
     const btnToggleSound = document.getElementById('btnToggleSound');
     const btnToggleInfo = document.getElementById('btnToggleInfo');
+    const btnToggleMic = document.getElementById('btnToggleMic');
+    const iconMicOn = document.getElementById('iconMicOn');
+    const iconMicOff = document.getElementById('iconMicOff');
     const iconSoundOn = document.getElementById('iconSoundOn');
     const iconSoundOff = document.getElementById('iconSoundOff');
     const infoDrawer = document.getElementById('infoDrawer');
@@ -232,6 +252,8 @@
     const fluidCanvas = document.getElementById('fluidCanvas');
     const glareMultiplier = document.getElementById('glareMultiplier');
     const glareSpeedLabel = document.getElementById('glareSpeedLabel');
+    const micTickerBar = document.getElementById('micTickerBar');
+    const micTickerContent = document.getElementById('micTickerContent');
     const ctx = fluidCanvas.getContext('2d');
 
     let audioCtx = null;
@@ -239,13 +261,27 @@
     let activeDelays = [];
     let activeMerger = null;
     let activeGainNode = null;
-    
+
+    // Анализатор микрофона
+    let micStream = null;
+    let analyserNode = null;
+    let micSourceNode = null;
+    let isMicActive = false;
+    let micDataArray = null;
+    let lastTickerUpdate = 0;
+    let lastTickerKey = '';
+
     let animationFrameId = null;
     let colorNodes = [];
     let particles = [];
     let isMuted = false;
     let isInfoOpen = false;
     let isPlaying = false;
+
+    // ↓↓↓ Ключевая переменная: какой источник сейчас питает визуализацию
+    let vizMode = 'text';   // 'text' — частоты из textarea;  'mic' — живой анализ микрофона
+
+    /* ---------- УТИЛИТЫ ---------- */
 
     function parseFrequencies() {
       return freqInput.value
@@ -280,13 +316,13 @@
     function getGoldColor(freq, index) {
       const goldShades = [
         { r: 212, g: 175, b: 55 },
-        { r: 230, g: 202, b: 101 },  
-        { r: 255, g: 215, b: 0 },    
-        { r: 205, g: 149, b: 12 },   
-        { r: 238, g: 201, b: 0 },    
-        { r: 240, g: 216, b: 120 },  
-        { r: 218, g: 165, b: 32 },   
-        { r: 225, g: 190, b: 80 }    
+        { r: 230, g: 202, b: 101 },
+        { r: 255, g: 215, b: 0 },
+        { r: 205, g: 149, b: 12 },
+        { r: 238, g: 201, b: 0 },
+        { r: 240, g: 216, b: 120 },
+        { r: 218, g: 165, b: 32 },
+        { r: 225, g: 190, b: 80 }
       ];
       const idx = index >= 0 ? index : Math.abs(Math.floor(freq)) % goldShades.length;
       const c = goldShades[idx % goldShades.length];
@@ -336,25 +372,15 @@
       let R = 0, G = 0, B = 0;
 
       if (wl >= 380 && wl < 440) {
-        R = -(wl - 440) / (440 - 380);
-        G = 0;
-        B = 1;
+        R = -(wl - 440) / (440 - 380); G = 0; B = 1;
       } else if (wl >= 440 && wl < 490) {
-        R = 0;
-        G = (wl - 440) / (490 - 440);
-        B = 1;
+        R = 0; G = (wl - 440) / (490 - 440); B = 1;
       } else if (wl >= 490 && wl < 510) {
-        R = 0;
-        G = 1;
-        B = -(wl - 510) / (510 - 490);
+        R = 0; G = 1; B = -(wl - 510) / (510 - 490);
       } else if (wl >= 510 && wl < 580) {
-        R = (wl - 510) / (580 - 510);
-        G = 1;
-        B = 0;
+        R = (wl - 510) / (580 - 510); G = 1; B = 0;
       } else if (wl >= 580 && wl < 645) {
-        R = 1;
-        G = -(wl - 645) / (645 - 580);
-        B = 0;
+        R = 1; G = -(wl - 645) / (645 - 580); B = 0;
       } else if (wl >= 645 && wl <= 780) {
         R = 1.0 - 0.6 * Math.pow((wl - 645) / (780 - 645), 1.5);
         G = 0;
@@ -417,6 +443,8 @@
     }
     window.addEventListener('resize', resizeCanvas);
 
+    /* ---------- ЦВЕТОВЫЕ УЗЛЫ И ЧАСТИЦЫ ---------- */
+
     function initColorNodes(calculatedData) {
       resizeCanvas();
       colorNodes = [];
@@ -437,9 +465,13 @@
             r: item.color.r,
             g: item.color.g,
             b: item.color.b,
+            targetR: item.color.r,
+            targetG: item.color.g,
+            targetB: item.color.b,
             x: Math.random() * w,
             y: Math.random() * h,
             baseRadius: spotRadius,
+            targetBaseRadius: spotRadius,
             vx: Math.cos(angle) * (0.4 + Math.random() * 0.4) * freqSpeedFactor,
             vy: Math.sin(angle) * (0.4 + Math.random() * 0.4) * freqSpeedFactor,
             phase: Math.random() * Math.PI * 2,
@@ -448,6 +480,7 @@
         }
       });
 
+      // Блёстки-частицы присутствуют всегда — они оживляют даже пустой экран
       for (let i = 0; i < 40; i++) {
         particles.push({
           x: Math.random() * w,
@@ -459,8 +492,175 @@
       }
     }
 
+    /* ---------- ПАНЕЛЬ SWATCHES ИЗ ТЕКСТОВЫХ ЧАСТОТ ---------- */
+
+    function renderTextSwatches(calculatedData, countText) {
+      activeSwatches.innerHTML = '';
+      activeCount.textContent = countText;
+
+      calculatedData.forEach(item => {
+        const badge = document.createElement('div');
+        badge.className = 'flex items-center justify-between text-xs font-mono p-1.5 rounded-lg bg-black/40 border border-white/10';
+        badge.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shadow" style="background-color: ${item.color.hex}"></span>
+            <span class="text-amber-200 font-bold">${item.freq} Гц</span>
+          </div>
+          <span class="text-cyan-300">${item.visibleLambdaNm.toFixed(0)} нм</span>
+          <span class="text-emerald-400 font-semibold">${item.basePeriod.toFixed(2)}с</span>
+          <span class="text-purple-300 font-semibold">${item.sizeCoeff.toFixed(2)}x</span>
+        `;
+        activeSwatches.appendChild(badge);
+      });
+    }
+
+    /* ---------- ТИКЕР МИКРОФОНА (троттлинг) ---------- */
+
+    function updateMicTicker(calculatedData) {
+      if (!micTickerContent) return;
+
+      const now = performance.now();
+      if (now - lastTickerUpdate < 150) return;
+
+      const key = (calculatedData || []).map(i => i.freq).join('|');
+      if (key === lastTickerKey) return;
+      lastTickerKey = key;
+      lastTickerUpdate = now;
+
+      if (!calculatedData || calculatedData.length === 0) {
+        micTickerContent.innerHTML = `<span class="text-slate-500 italic">Слушаем окружение...</span>`;
+        return;
+      }
+
+      micTickerContent.innerHTML = calculatedData.map(item => `
+        <div class="inline-flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-amber-500/30 text-xs font-mono shrink-0 shadow-md">
+          <span class="w-2.5 h-2.5 rounded-full border border-white/40" style="background-color: ${item.color.hex}"></span>
+          <span class="text-amber-200 font-bold">${item.freq} Гц</span>
+          <span class="text-slate-400">•</span>
+          <span class="text-cyan-300">${item.color.hex}</span>
+        </div>
+      `).join('');
+    }
+
+    /* ---------- ПРАВАЯ ПАНЕЛЬ SWATCHES (для микрофона) ---------- */
+
+    function updateMicSwatches(calculatedData) {
+      activeSwatches.innerHTML = '';
+      activeCount.textContent = `${calculatedData.length} частот (микрофон)`;
+
+      calculatedData.forEach(item => {
+        const badge = document.createElement('div');
+        badge.className = 'flex items-center justify-between text-xs font-mono p-1.5 rounded-lg bg-black/40 border border-amber-500/30';
+        badge.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shadow" style="background-color: ${item.color.hex}"></span>
+            <span class="text-amber-200 font-bold">${item.freq} Гц</span>
+          </div>
+          <span class="text-cyan-300">${item.visibleLambdaNm.toFixed(0)} нм</span>
+        `;
+        activeSwatches.appendChild(badge);
+      });
+    }
+
+    /* ---------- ВСПОМОГАТЕЛЬНОЕ: ПЕРЕКЛЮЧЕНИЕ ВИЗУАЛИЗАЦИИ НА ТЕКСТОВЫЕ ЧАСТОТЫ ---------- */
+    // Полностью пересоздаёт узлы и swatches из частот в textarea.
+    // Нужно, когда мы уходим из режима микрофона обратно к ручному набору частот.
+
+    function switchVizToText() {
+      const freqs = parseFrequencies();
+      const calcFreqs = (freqs.length > 0 ? freqs : [440, 880]);
+      const calculatedData = calcFreqs.map(f => calculateSpectrum(f));
+
+      initColorNodes(calculatedData);
+      renderTextSwatches(calculatedData, `${freqs.length} частот`);
+
+      vizMode = 'text';
+    }
+
+    /* ---------- АНАЛИЗ МИКРОФОНА ---------- */
+
+    function analyzeMicrophoneInput() {
+      if (!isMicActive || !analyserNode) return;
+
+      const bufferLength = analyserNode.frequencyBinCount;
+
+      if (!micDataArray || micDataArray.length !== bufferLength) {
+        micDataArray = new Uint8Array(bufferLength);
+      }
+      analyserNode.getByteFrequencyData(micDataArray);
+      const dataArray = micDataArray;
+
+      const sampleRate = audioCtx.sampleRate;
+      const binWidth = (sampleRate / 2) / bufferLength;
+
+      const maxBin3000 = Math.min(bufferLength, Math.floor(3000 / binWidth));
+      let peaks = [];
+
+      for (let i = 2; i < maxBin3000 - 2; i++) {
+        const val = dataArray[i];
+        if (val > 65 && val > dataArray[i - 1] && val > dataArray[i + 1]) {
+          const freq = Math.round(i * binWidth);
+          peaks.push({ freq, amp: val });
+        }
+      }
+
+      peaks.sort((a, b) => b.amp - a.amp);
+      const topPeaks = peaks.slice(0, 6);
+
+      if (topPeaks.length > 0) {
+        const calculatedData = topPeaks.map(p => calculateSpectrum(p.freq));
+
+        updateMicTicker(calculatedData);
+        updateMicSwatches(calculatedData);
+
+        if (colorNodes.length === 0) {
+          initColorNodes(calculatedData);
+          vizMode = 'mic';
+        } else {
+          const requiredNodes = calculatedData.length * 2;
+
+          if (colorNodes.length > requiredNodes) {
+            colorNodes.length = requiredNodes;
+          }
+
+          calculatedData.forEach((item, idx) => {
+            const n1 = colorNodes[idx * 2];
+            const n2 = colorNodes[idx * 2 + 1];
+            const spotRadius = Math.min(fluidCanvas.width, fluidCanvas.height) * 0.45 * item.sizeCoeff;
+
+            if (n1) {
+              n1.targetR = item.color.r;
+              n1.targetG = item.color.g;
+              n1.targetB = item.color.b;
+              n1.targetBaseRadius = spotRadius;
+            }
+            if (n2) {
+              n2.targetR = item.color.r;
+              n2.targetG = item.color.g;
+              n2.targetB = item.color.b;
+              n2.targetBaseRadius = spotRadius;
+            }
+          });
+        }
+      } else {
+        updateMicTicker([]);
+        // Плавно уводим пятна в тёмный тон при тишине
+        colorNodes.forEach(n => {
+          n.targetR = 20;
+          n.targetG = 25;
+          n.targetB = 35;
+        });
+      }
+    }
+
+    /* ---------- РЕНДЕР ---------- */
+
     function renderFluid() {
       if (!isPlaying) return;
+
+      if (isMicActive) {
+        analyzeMicrophoneInput();
+      }
 
       const w = fluidCanvas.width;
       const h = fluidCanvas.height;
@@ -471,6 +671,11 @@
 
       ctx.globalCompositeOperation = 'screen';
       colorNodes.forEach(node => {
+        node.r += (node.targetR - node.r) * 0.06;
+        node.g += (node.targetG - node.g) * 0.06;
+        node.b += (node.targetB - node.b) * 0.06;
+        node.baseRadius += (node.targetBaseRadius - node.baseRadius) * 0.05;
+
         node.phase += node.pulseSpeed * sliderCoeff;
         node.x += (node.vx * sliderCoeff) + Math.sin(node.phase) * 0.5 * sliderCoeff;
         node.y += (node.vy * sliderCoeff) + Math.cos(node.phase) * 0.5 * sliderCoeff;
@@ -483,10 +688,14 @@
         const currentRadius = Math.max(60, node.baseRadius * 2 * (0.85 + 0.3 * Math.sin(node.phase)));
         const currentAlpha = 0.55 + 0.35 * Math.cos(node.phase * 1.3);
 
+        const rInt = Math.round(node.r);
+        const gInt = Math.round(node.g);
+        const bInt = Math.round(node.b);
+
         const grad = ctx.createRadialGradient(node.x, node.y, 10, node.x, node.y, currentRadius);
-        grad.addColorStop(0, `rgba(${node.r}, ${node.g}, ${node.b}, ${currentAlpha})`);
-        grad.addColorStop(0.5, `rgba(${node.r}, ${node.g}, ${node.b}, ${currentAlpha * 0.3})`);
-        grad.addColorStop(1, `rgba(${node.r}, ${node.g}, ${node.b}, 0)`);
+        grad.addColorStop(0, `rgba(${rInt}, ${gInt}, ${bInt}, ${currentAlpha})`);
+        grad.addColorStop(0.5, `rgba(${rInt}, ${gInt}, ${bInt}, ${currentAlpha * 0.3})`);
+        grad.addColorStop(1, `rgba(${rInt}, ${gInt}, ${bInt}, 0)`);
 
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -507,6 +716,91 @@
       ctx.globalCompositeOperation = 'source-over';
       animationFrameId = requestAnimationFrame(renderFluid);
     }
+
+    /* ---------- МИКРОФОН ---------- */
+
+    async function toggleMicrophone() {
+      if (isMicActive) {
+        stopMicrophone();
+        return;
+      }
+
+      try {
+        if (!audioCtx) {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new Ctx({ sampleRate: SAMPLE_RATE });
+        }
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+
+        stopAudio();
+
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        micSourceNode = audioCtx.createMediaStreamSource(micStream);
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 2048;
+        analyserNode.smoothingTimeConstant = 0.88;
+
+        micSourceNode.connect(analyserNode);
+
+        isMicActive = true;
+        iconMicOff.classList.add('hidden');
+        iconMicOn.classList.remove('hidden');
+        micTickerBar.classList.remove('hidden');
+
+        if (!isPlaying) {
+          launchShow(true);
+        } else {
+          // Микрофон включён при активном цикле — очищаем старые узлы,
+          // чтобы анализатор начал с чистого листа
+          colorNodes = [];
+          particles = [];
+          vizMode = 'mic';
+          activeSwatches.innerHTML =
+            '<div class="text-xs text-slate-500 italic">Ожидание звука с микрофона…</div>';
+          activeCount.textContent = 'микрофон (живой анализ)';
+        }
+      } catch (err) {
+        alert('Не удалось получить доступ к микрофону: ' + err.message);
+      }
+    }
+
+    function stopMicrophone() {
+      const wasMic = isMicActive;
+
+      if (micStream) {
+        micStream.getTracks().forEach(track => track.stop());
+        micStream = null;
+      }
+      if (micSourceNode) {
+        try { micSourceNode.disconnect(); } catch(e) {}
+        micSourceNode = null;
+      }
+      if (analyserNode) {
+        try { analyserNode.disconnect(); } catch(e) {}
+        analyserNode = null;
+      }
+      micDataArray = null;
+      lastTickerKey = '';
+      lastTickerUpdate = 0;
+
+      isMicActive = false;
+      iconMicOff.classList.remove('hidden');
+      iconMicOn.classList.add('hidden');
+      micTickerBar.classList.add('hidden');
+
+      // ─── ВОЗВРАЩАЕМ ВИЗУАЛИЗАЦИЮ К ТЕКСТОВЫМ ЧАСТОТАМ ───
+      // Если цикл активен и мы только что вышли из микрофона —
+      // пересоздаём узлы из textarea, чтобы пятна не оставались
+      // в последнем (возможно, тёмном) состоянии микрофона.
+      if (wasMic && isPlaying && vizMode === 'mic') {
+        switchVizToText();
+      }
+    }
+
+    /* ---------- ЗВУК ---------- */
 
     function updateGlareSpeedLabel() {
       const mult = parseFloat(glareMultiplier.value) || 2.4;
@@ -537,7 +831,7 @@
 
     function startAudio(freqs) {
       stopAudio();
-      if (!freqs || freqs.length === 0) return;
+      if (!freqs || freqs.length === 0 || isMicActive) return;
 
       if (!audioCtx) {
         const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -578,24 +872,48 @@
       });
     }
 
+    /* ---------- УПРАВЛЕНИЕ ---------- */
+
     function togglePlayPause() {
       if (isPlaying) {
+        // ПАУЗА
         isPlaying = false;
         stopAudio();
-        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        stopMicrophone();
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
         iconPause.classList.add('hidden');
         iconPlayResume.classList.remove('hidden');
         btnStop.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
         btnStop.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
       } else {
+        // PLAY
         const freqs = parseFrequencies();
-        if (freqs.length === 0) return;
+        if (freqs.length === 0 && !isMicActive) return;
         isPlaying = true;
         iconPlayResume.classList.add('hidden');
         iconPause.classList.remove('hidden');
         btnStop.classList.remove('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/40');
         btnStop.classList.add('bg-amber-500/20', 'text-amber-300', 'border-amber-500/40');
-        startAudio(freqs);
+
+        if (!isMicActive) {
+          startAudio(freqs);
+
+          // ─── ПЕРЕСОЗДАЁМ ВИЗУАЛЬНЫЕ УЗЛЫ ───
+          // Ключевая правка: пересоздаём ВСЕГДА, если только что вышли
+          // из микрофона (vizMode !== 'text') ИЛИ узлов нет.
+          // Так звук из textarea гарантированно получает свою визуализацию.
+          if (vizMode !== 'text' || colorNodes.length === 0) {
+            switchVizToText();
+          }
+        }
+
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
         renderFluid();
       }
     }
@@ -626,29 +944,32 @@
       }
     }
 
-    function launchShow() {
+    function launchShow(fromMic = false) {
       const freqs = parseFrequencies();
-      if (freqs.length === 0) return;
 
-      const calculatedData = freqs.map(f => calculateSpectrum(f));
+      if (!fromMic && isMicActive) {
+        stopMicrophone();
+      }
 
-      activeSwatches.innerHTML = '';
-      activeCount.textContent = `${freqs.length} частот`;
+      const isMicMode = fromMic || isMicActive;
 
-      calculatedData.forEach(item => {
-        const badge = document.createElement('div');
-        badge.className = 'flex items-center justify-between text-xs font-mono p-1.5 rounded-lg bg-black/40 border border-white/10';
-        badge.innerHTML = `
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full shadow" style="background-color: ${item.color.hex}"></span>
-            <span class="text-amber-200 font-bold">${item.freq} Гц</span>
-          </div>
-          <span class="text-cyan-300">${item.visibleLambdaNm.toFixed(0)} нм</span>
-          <span class="text-emerald-400 font-semibold">${item.basePeriod.toFixed(2)}с</span>
-          <span class="text-purple-300 font-semibold">${item.sizeCoeff.toFixed(2)}x</span>
-        `;
-        activeSwatches.appendChild(badge);
-      });
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      if (isMicMode) {
+        // === МИКРОФОН: не используем частоты из textarea ===
+        colorNodes = [];
+        particles = [];
+        vizMode = 'mic';
+        activeSwatches.innerHTML =
+          '<div class="text-xs text-slate-500 italic">Ожидание звука с микрофона…</div>';
+        activeCount.textContent = 'микрофон (живой анализ)';
+      } else {
+        // === ОБЫЧНЫЙ РЕЖИМ ===
+        switchVizToText();
+      }
 
       fullscreenOverlay.classList.remove('opacity-0', 'pointer-events-none');
       appInterface.classList.add('opacity-0');
@@ -657,21 +978,29 @@
       iconPlayResume.classList.add('hidden');
       iconPause.classList.remove('hidden');
 
-      initColorNodes(calculatedData);
       renderFluid();
-      startAudio(freqs);
+
+      if (!isMicMode && freqs.length > 0) {
+        startAudio(freqs);
+      }
     }
 
     function exitShow() {
       fullscreenOverlay.classList.add('opacity-0', 'pointer-events-none');
       appInterface.classList.remove('opacity-0');
-      
+
       isPlaying = false;
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
       stopAudio();
-      
+      stopMicrophone();
+
       if (isInfoOpen) toggleInfoDrawer();
     }
+
+    /* ---------- СОБЫТИЯ ---------- */
 
     freqInput.addEventListener('input', updateTable);
     glareMultiplier.addEventListener('input', updateGlareSpeedLabel);
@@ -683,11 +1012,12 @@
       });
     });
 
-    btnPlay.addEventListener('click', launchShow);
+    btnPlay.addEventListener('click', () => launchShow(false));
     btnBack.addEventListener('click', exitShow);
     btnStop.addEventListener('click', togglePlayPause);
     btnToggleSound.addEventListener('click', toggleMute);
     btnToggleInfo.addEventListener('click', toggleInfoDrawer);
+    btnToggleMic.addEventListener('click', toggleMicrophone);
 
     updateTable();
   </script>
@@ -712,7 +1042,7 @@
       if (freqs && autoPlay === '1') {
           const cleanFreqs = decodeURIComponent(freqs);
 
-          const inputEl = document.getElementById('freqInput') 
+          const inputEl = document.getElementById('freqInput')
               || document.querySelector('input[type="text"]')
               || document.querySelector('textarea');
 
@@ -722,8 +1052,8 @@
               inputEl.dispatchEvent(new Event('change', { bubbles: true }));
           }
 
-          const playBtn = document.getElementById('btnPlay') 
-              || document.getElementById('btnShowPlay') 
+          const playBtn = document.getElementById('btnPlay')
+              || document.getElementById('btnShowPlay')
               || Array.from(document.querySelectorAll('button, input[type="button"]'))
                   .find(el => el.textContent.includes('Показать') || el.value?.includes('Показать'));
 
