@@ -76,7 +76,7 @@
         <button class="preset-btn px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 transition" data-val="1558; 1788; 1880; 2058; 2272; 2423; 2726">🌈 Радуга</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-200 border border-yellow-500/30 transition" data-val="887; 909; 932; 948; 965; 1773; 1864; 1930">✨ Золото (оттенки)</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/30 transition" data-val="1059; 1101; 1148; 1185; 1225; 1298; 2203; 2371">❄️ Серебро (оттенки)</button>
-        <button class="preset-btn px-2.5 py-1 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 transition" data-val="413; 957; 1049; 1124; 653.8; 1515; 2097; 2249; 657.8">🦪 Перламутр (оттенки)</button>
+        <button class="preset-btn px-2.5 py-1 rounded-md bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-500/30 transition" data-val="879; 1170; 1260;447; 457; 470; 488; 510; 554; 590; 610; 640; 665">🦪 Перламутр</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="432; 528; 639">Сольфеджио</button>
         <button class="preset-btn px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" data-val="261.63; 329.63; 392.00; 493.88">Мажор C-E-G-B</button>
       </div>
@@ -168,7 +168,7 @@
       <div class="mb-4 pb-3 border-b border-white/10">
         <div class="flex justify-between items-center text-xs text-amber-200 mb-1">
           <span class="font-semibold">Делитель скорости бликования</span>
-          <span id="glareSpeedLabel" class="font-mono text-cyan-300">1.0x (Коэффициент)</span>
+          <span id="glareSpeedLabel" class="font-mono text-cyan-300">2.4x (Коэффициент)</span>
         </div>
         <input 
           type="range" 
@@ -247,37 +247,6 @@
       return 1.5 - (freq / 3000.0);
     }
 
-    function getPearlColor(freq, index, lambdaNm) {
-  // 1. Получаем истинный спектральный цвет из длины волны
-  const spectral = wavelengthToRGBContinuous(lambdaNm);
-  
-  // 2. Коэффициент «перламутровости» — сколько белого подмешать
-  //    0.0 = чистый спектр (радуга)
-  //    0.5 = пастель (рекомендую)
-  //    0.7 = сильный перламутр, ближе к классическому жемчугу
-  //    0.85 = почти белый (как было до правки)
-  const pearlMix = 0.75;
-  
-  // 3. Микро-вариация между пятнами, чтобы они не сливались в один цвет
-  const jitter = index >= 0 ? ((index % 5) - 2) * 3 : 0;
-  
-  let r = spectral.r * (1 - pearlMix) + 255 * pearlMix + jitter;
-  let g = spectral.g * (1 - pearlMix) + 255 * pearlMix + jitter;
-  let b = spectral.b * (1 - pearlMix) + 255 * pearlMix - jitter;
-  
-  // 4. Лёгкий тёплый сдвиг — жемчуг всегда чуть теплее чистого спектра
-  r += 6;
-  g += 2;
-  b -= 4;
-  
-  r = Math.min(255, Math.max(0, Math.round(r)));
-  g = Math.min(255, Math.max(0, Math.round(g)));
-  b = Math.min(255, Math.max(0, Math.round(b)));
-  
-  const hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-  return { r, g, b, hex, rgbStr: `rgb(${r}, ${g}, ${b})` };
-}
-
     function getSilverColor(freq, index) {
       const base = 192;
       const metallicShifts = [0, -15, 12, -8, 18, -12, 24, -20];
@@ -327,7 +296,6 @@
       }
 
       const silverList = [1059, 1101, 1148, 1185, 1225, 1298, 2203, 2371];
-      const pearlList = [413, 957, 1049, 1124, 653.8, 1515, 2097, 2249, 657.8];
       const goldList = [887, 909, 932, 948, 965, 1773, 1864, 1930];
 
       const roundedF = Math.round(freq);
@@ -335,8 +303,6 @@
 
       if (silverList.includes(roundedF)) {
         colorData = getSilverColor(freq, silverList.indexOf(roundedF));
-      } else if (pearlList.includes(roundedF)) {
-        colorData = getPearlColor(freq, pearlList.indexOf(roundedF), lambdaNm);
       } else if (goldList.includes(roundedF)) {
         colorData = getGoldColor(freq, goldList.indexOf(roundedF));
       } else {
