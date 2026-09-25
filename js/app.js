@@ -387,7 +387,8 @@ function initNavigation() {
     search: document.getElementById('nav-search'),
     about: document.getElementById('nav-about'),
     history: document.getElementById('nav-history'),
-    nozod: document.getElementById('nav-nozod') // ← новая строка
+    nozod: document.getElementById('nav-nozod'), // ← новая строка
+    vizar: document.getElementById('nav-vizar')
 };
     
     const collapseNavbar = () => {
@@ -453,6 +454,15 @@ function initNavigation() {
         collapseNavbar();
     });
 }
+
+if (navLinks.vizar) {
+        navLinks.about.addEventListener('click', (e) => {
+            e.preventDefault();
+            setActiveNav('vizar');
+            showPage('vizar');
+            collapseNavbar();
+        });
+    }
 }
 
 function setActiveNav(activeId) {
