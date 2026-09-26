@@ -381,15 +381,15 @@ function showPage(page) {
 
 function initNavigation() {
     const navLinks = {
-    home: document.getElementById('nav-home'),
-    pathologies: document.getElementById('nav-pathologies'),
-    points: document.getElementById('nav-points'),
-    search: document.getElementById('nav-search'),
-    about: document.getElementById('nav-about'),
-    history: document.getElementById('nav-history'),
-    nozod: document.getElementById('nav-nozod'), // ← новая строка
-    vizar: document.getElementById('nav-vizar')
-};
+        home: document.getElementById('nav-home'),
+        pathologies: document.getElementById('nav-pathologies'),
+        points: document.getElementById('nav-points'),
+        search: document.getElementById('nav-search'),
+        about: document.getElementById('nav-about'),
+        history: document.getElementById('nav-history'),
+        nozod: document.getElementById('nav-nozod'),
+        vizar: document.getElementById('nav-vizar')
+    };
     
     const collapseNavbar = () => {
         if (navbarCollapse && navbarCollapse.classList.contains('show')) {
@@ -447,26 +447,25 @@ function initNavigation() {
         });
     }
     if (navLinks.nozod) {
-    navLinks.nozod.addEventListener('click', (e) => {
-        e.preventDefault();
-        setActiveNav('nozod');
-        showPage('nozod');
-        collapseNavbar();
-    });
-}
-
-if (navLinks.vizar) {
-        navLinks.about.addEventListener('click', (e) => {
+        navLinks.nozod.addEventListener('click', (e) => {
             e.preventDefault();
-            setActiveNav('vizar');
-            showPage('vizar');
+            setActiveNav('nozod');
+            showPage('nozod');
+            collapseNavbar();
+        });
+    }
+    
+    // «Световые озёра» — ссылка на LUXE METALLICS.html.
+    // Не перехватываем клик, чтобы переход по href сработал штатно
+    if (navLinks.vizar) {
+        navLinks.vizar.addEventListener('click', () => {
             collapseNavbar();
         });
     }
 }
 
 function setActiveNav(activeId) {
-    const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history', 'nozod'];
+    const navLinks = ['home', 'pathologies', 'points', 'search', 'about', 'history', 'nozod', 'vizar'];
     navLinks.forEach(id => {
         const el = document.getElementById(`nav-${id}`);
         if (el) {
