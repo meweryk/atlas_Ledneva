@@ -77,7 +77,14 @@ class AppStorage {
           let changed = false;
           parsed.records.forEach(rec => {
             if (!rec.measurements) {
-              rec.measurements = { elediya: null, fol: null, saved: false };
+              // Новый формат по умолчанию
+              rec.measurements = { elediya: null, folLeft: null, folRight: null, saved: false };
+              changed = true;
+            } else if (rec.measurements.fol !== undefined && rec.measurements.folLeft === undefined) {
+              // Миграция старого формата 'fol' -> 'folLeft'
+              rec.measurements.folLeft = rec.measurements.fol;
+              rec.measurements.folRight = null;
+              delete rec.measurements.fol;
               changed = true;
             }
           });
@@ -156,7 +163,21 @@ function showToast(message) {
     }, 3000);
 }
 
-// ========== ЗАВАНТАЖЕННЯ ДАНИХ ==========
+// ========== ДОПОМІЖНА ФУНКЦІЯ ДЛЯ КЛАСУ ФОЛЛЯ ==========
+function getFolClass(val) {
+    if (val === '' || val === null || val === undefined) return '';
+    const num = parseFloat(val);
+    if (isNaN(num)) return '';
+    if (num >= 0 && num <= 20) return 'fol-range-0-20';
+    if (num >= 21 && num <= 28) return 'fol-range-21-28';
+    if (num >= 29 && num <= 38) return 'fol-range-29-38';
+    if (num >= 39 && num <= 48) return 'fol-range-39-48';
+    if (num >= 49 && num <= 65) return 'fol-range-49-65';
+    if (num >= 66 && num <= 80) return 'fol-range-66-80';
+    if (num >= 81 && num <= 100) return 'fol-range-81-100';
+    return '';
+}
+
 // ========== ЗАВАНТАЖЕННЯ ДАНИХ ==========
 async function loadData() {
     console.log('=== ІНІЦІАЛІЗАЦІЯ АТЛАСУ ===');
@@ -594,14 +615,19 @@ function handleSaveMeasurement(pathology, point, checkBtn) {
     }
     
     const elediyaInput = document.getElementById('modalElediyaInput');
-    const folInput = document.getElementById('modalFolInput');
+    const folLeftInput = document.getElementById('modalFolLeftInput');
+    const folRightInput = document.getElementById('modalFolRightInput');
+    
     const elediyaVal = elediyaInput?.value.trim() || '';
-    const folVal = folInput?.value.trim() || '';
-    const hasMeasurements = elediyaVal !== '' || folVal !== '';
+    const folLeftVal = folLeftInput?.value.trim() || '';
+    const folRightVal = folRightInput?.value.trim() || '';
+    
+    const hasMeasurements = elediyaVal !== '' || folLeftVal !== '' || folRightVal !== '';
     
     const measurements = {
         elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
-        fol: folVal !== '' ? parseFloat(folVal) : null,
+        folLeft: folLeftVal !== '' ? parseFloat(folLeftVal) : null,
+        folRight: folRightVal !== '' ? parseFloat(folRightVal) : null,
         saved: hasMeasurements
     };
     
@@ -735,7 +761,8 @@ function showPointCard(pathology, point) {
         }
         
         const savedElediya = recentRecord?.measurements?.elediya ?? '';
-        const savedFol = recentRecord?.measurements?.fol ?? '';
+        const savedFolLeft = recentRecord?.measurements?.folLeft ?? '';
+        const savedFolRight = recentRecord?.measurements?.folRight ?? '';
         
         const measurementSection = document.createElement('div');
         measurementSection.id = 'modalMeasurementSection';
@@ -748,9 +775,19 @@ function showPointCard(pathology, point) {
         
         measurementSection.innerHTML = `
             <strong>Показания приборов:</strong>
-            <div class="d-flex gap-2 mt-2">
-                <input type="number" class="form-control form-control-sm" id="modalElediyaInput" placeholder="эледия" value="${savedElediya}">
-                <input type="number" class="form-control form-control-sm" id="modalFolInput" placeholder="фоль" value="${savedFol}">
+            <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                <div class="input-group input-group-sm w-100">
+                    <span class="input-group-text">Эледия</span>
+                    <input type="number" class="form-control" id="modalElediyaInput" placeholder="" value="${savedElediya}">
+                </div>
+                <div class="input-group input-group-sm flex-grow-1" style="min-width: 100px;">
+                    <span class="input-group-text">Фолль Л</span>
+                    <input type="number" class="form-control" id="modalFolLeftInput" placeholder="" value="${savedFolLeft}">
+                </div>
+                <div class="input-group input-group-sm flex-grow-1" style="min-width: 100px;">
+                    <span class="input-group-text">Фолль П</span>
+                    <input type="number" class="form-control" id="modalFolRightInput" placeholder="" value="${savedFolRight}">
+                </div>
             </div>
             <button class="btn btn-sm btn-success mt-2 w-100" id="modalSaveMeasurementBtn">
                 <i class="bi bi-check-circle"></i> Записать
@@ -764,7 +801,9 @@ function showPointCard(pathology, point) {
             saveBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                handleSaveMeasurement(pathology, point, null);
+                // Находим галочку в DOM и передаем её в функцию сохранения
+                const checkBtn = document.getElementById('pointCheckButton');
+                handleSaveMeasurement(pathology, point, checkBtn);
             });
         }
     }
@@ -1543,7 +1582,8 @@ function addRecord(pointData) {
         timestamp: Date.now(),
         measurements: {
             elediya: null,
-            fol: null,
+            folLeft: null,
+            folRight: null,
             saved: false
         }
     };
@@ -1711,32 +1751,32 @@ function showUserRecords(userId) {
                 const shortName = rec.pointName.split('/')[0].trim();
                 const isSaved = rec.measurements && rec.measurements.saved;
                 const elediyaVal = rec.measurements?.elediya !== null && rec.measurements?.elediya !== undefined ? rec.measurements.elediya : '';
-                const folVal = rec.measurements?.fol !== null && rec.measurements?.fol !== undefined ? rec.measurements.fol : '';
+                const folLeftVal = rec.measurements?.folLeft !== null && rec.measurements?.folLeft !== undefined ? rec.measurements.folLeft : '';
+                const folRightVal = rec.measurements?.folRight !== null && rec.measurements?.folRight !== undefined ? rec.measurements.folRight : '';
                 
-                let folClass = '';
-                if (isSaved && folVal !== '') {
-                    const num = parseFloat(folVal);
-                    if (!isNaN(num)) {
-                        if (num >= 0 && num <= 20) folClass = 'fol-range-0-20';
-                        else if (num >= 21 && num <= 28) folClass = 'fol-range-21-28';
-                        else if (num >= 29 && num <= 38) folClass = 'fol-range-29-38';
-                        else if (num >= 39 && num <= 48) folClass = 'fol-range-39-48';
-                        else if (num >= 49 && num <= 65) folClass = 'fol-range-49-65';
-                        else if (num >= 66 && num <= 80) folClass = 'fol-range-66-80';
-                        else if (num >= 81 && num <= 100) folClass = 'fol-range-81-100';
-                    }
-                }
+                const folLeftClass = getFolClass(folLeftVal);
+                const folRightClass = getFolClass(folRightVal);
                 
                 html += `
                     <div class="record-row mb-2 p-1 border rounded" data-record-id="${rec.id}">
-                        <div class="d-flex align-items-center flex-wrap">
+                        <div class="d-flex flex-wrap gap-1 align-items-center">
                             <span class="point-history-link me-2" data-point-name="${rec.pointName}" data-pathology="${rec.pathologyName}" style="cursor:pointer; color:#0d6efd; text-decoration:underline;">
                                 <strong>${shortName}</strong> <span class="text-muted">(${time})</span>
                             </span>
-                            <div class="d-flex gap-2 ms-auto">
-                                <input type="number" class="form-control form-control-sm elediya-input" style="width: 80px;" placeholder="эледия" value="${elediyaVal}" ${isSaved ? 'disabled' : ''}>
-                                <input type="number" class="form-control form-control-sm fol-input ${folClass}" style="width: 80px;" placeholder="фоль" value="${folVal}" ${isSaved ? 'disabled' : ''}>
-                                ${!isSaved ? '<button class="btn btn-sm btn-success save-measurement">save</button>' : ''}
+                            <div class="d-flex flex-wrap gap-1 ms-auto align-items-center">
+                                <div class="input-group input-group-sm" style="width: 75px;">
+                                    <span class="input-group-text px-1" style="font-size:0.7rem;">Э</span>
+                                    <input type="number" class="form-control elediya-input" placeholder="" value="${elediyaVal}" ${isSaved ? 'disabled' : ''}>
+                                </div>
+                                <div class="input-group input-group-sm" style="width: 80px;">
+                                    <span class="input-group-text px-1" style="font-size:0.7rem;">Л</span>
+                                    <input type="number" class="form-control fol-left-input ${folLeftClass}" placeholder="" value="${folLeftVal}" ${isSaved ? 'disabled' : ''}>
+                                </div>
+                                <div class="input-group input-group-sm" style="width: 80px;">
+                                    <span class="input-group-text px-1" style="font-size:0.7rem;">П</span>
+                                    <input type="number" class="form-control fol-right-input ${folRightClass}" placeholder="" value="${folRightVal}" ${isSaved ? 'disabled' : ''}>
+                                </div>
+                                ${!isSaved ? '<button class="btn btn-sm btn-success save-measurement px-2 py-0" style="font-size:0.75rem;">save</button>' : ''}
                             </div>
                         </div>
                     </div>
@@ -1769,12 +1809,14 @@ function showUserRecords(userId) {
             if (!recordRow) return;
             const recordId = recordRow.dataset.recordId;
             const elediyaInput = recordRow.querySelector('.elediya-input');
-            const folInput = recordRow.querySelector('.fol-input');
+            const folLeftInput = recordRow.querySelector('.fol-left-input');
+            const folRightInput = recordRow.querySelector('.fol-right-input');
             
             const elediyaVal = elediyaInput.value.trim();
-            const folVal = folInput.value.trim();
+            const folLeftVal = folLeftInput.value.trim();
+            const folRightVal = folRightInput.value.trim();
             
-            if (elediyaVal === '' && folVal === '') {
+            if (elediyaVal === '' && folLeftVal === '' && folRightVal === '') {
                 alert('Введите хотя бы одно значение');
                 return;
             }
@@ -1785,30 +1827,19 @@ function showUserRecords(userId) {
             
             record.measurements = {
                 elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
-                fol: folVal !== '' ? parseFloat(folVal) : null,
+                folLeft: folLeftVal !== '' ? parseFloat(folLeftVal) : null,
+                folRight: folRightVal !== '' ? parseFloat(folRightVal) : null,
                 saved: true
             };
             saveHistory(history);
             
             elediyaInput.disabled = true;
-            folInput.disabled = true;
+            folLeftInput.disabled = true;
+            folRightInput.disabled = true;
             btn.remove();
             
-            if (folVal !== '') {
-                const num = parseFloat(folVal);
-                if (!isNaN(num)) {
-                    let folClass = '';
-                    if (num >= 0 && num <= 20) folClass = 'fol-range-0-20';
-                    else if (num >= 21 && num <= 28) folClass = 'fol-range-21-28';
-                    else if (num >= 29 && num <= 38) folClass = 'fol-range-29-38';
-                    else if (num >= 39 && num <= 48) folClass = 'fol-range-39-48';
-                    else if (num >= 49 && num <= 65) folClass = 'fol-range-49-65';
-                    else if (num >= 66 && num <= 80) folClass = 'fol-range-66-80';
-                    else if (num >= 81 && num <= 100) folClass = 'fol-range-81-100';
-                    
-                    folInput.classList.add(folClass);
-                }
-            }
+            if (folLeftVal !== '') folLeftInput.classList.add(getFolClass(folLeftVal));
+            if (folRightVal !== '') folRightInput.classList.add(getFolClass(folRightVal));
         });
     });
     
