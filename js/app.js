@@ -77,11 +77,9 @@ class AppStorage {
           let changed = false;
           parsed.records.forEach(rec => {
             if (!rec.measurements) {
-              // Новый формат по умолчанию
               rec.measurements = { elediya: null, folLeft: null, folRight: null, saved: false };
               changed = true;
             } else if (rec.measurements.fol !== undefined && rec.measurements.folLeft === undefined) {
-              // Миграция старого формата 'fol' -> 'folLeft'
               rec.measurements.folLeft = rec.measurements.fol;
               rec.measurements.folRight = null;
               delete rec.measurements.fol;
@@ -293,10 +291,8 @@ function restoreReturnState() {
     
     if (!state || state.page !== 'nozod') return;
     
-    // Переключаемся на вкладку «Нозод»
     showPage('nozod');
     
-    // Ждём, пока nozod.js отрисует аккордеон (контейнер получит дочерние узлы)
     let tries = 0;
     const iv = setInterval(() => {
         tries++;
@@ -305,7 +301,6 @@ function restoreReturnState() {
             clearInterval(iv);
             revealReturnedNozod(state);
         } else if (tries > 40) {
-            // Через 4 секунды всё равно пытаемся, даже если контейнер пуст
             clearInterval(iv);
             if (typeof state.scrollY === 'number') {
                 window.scrollTo(0, state.scrollY);
@@ -315,7 +310,6 @@ function restoreReturnState() {
 }
 
 function revealReturnedNozod(state) {
-    // 1. Раскрываем нужную категорию аккордеона
     if (state.category) {
         const target = document.querySelector(state.category);
         if (target && window.bootstrap && window.bootstrap.Collapse) {
@@ -324,7 +318,6 @@ function revealReturnedNozod(state) {
         }
     }
     
-    // 2. Скроллим к нужному нозоду (после того как аккордеон раскрылся)
     setTimeout(() => {
         if (state.name) {
             const allNames = document.querySelectorAll('.nozode-item .nozod-name');
@@ -337,7 +330,6 @@ function revealReturnedNozod(state) {
                 }
             }
         }
-        // Если нозод не нашли — возвращаемся к сохранённой позиции скролла
         if (typeof state.scrollY === 'number') {
             window.scrollTo(0, state.scrollY);
         }
@@ -365,7 +357,6 @@ function showPage(page) {
     aboutPage.style.display = 'none';
     if (nozodPage) nozodPage.style.display = 'none';
     
-    // Уход с любой страницы, кроме «Нозод», глушит воспроизведение
     if (page !== 'nozod' && window.Nozod && window.Nozod.stopAll) {
         window.Nozod.stopAll();
     }
@@ -476,8 +467,6 @@ function initNavigation() {
         });
     }
     
-    // «Световые озёра» — ссылка на LUXE METALLICS.html.
-    // Не перехватываем клик, чтобы переход по href сработал штатно
     if (navLinks.vizar) {
         navLinks.vizar.addEventListener('click', () => {
             collapseNavbar();
@@ -675,6 +664,7 @@ function handleSaveMeasurement(pathology, point, checkBtn) {
 }
 
 // ========== КАРТКА ТОЧКИ ==========
+// ========== КАРТКА ТОЧКИ ==========
 function showPointCard(pathology, point) {
     const titleEl = document.getElementById('viewPointTitle');
     const dispEl = document.getElementById('viewDispersion');
@@ -683,7 +673,7 @@ function showPointCard(pathology, point) {
     titleEl.textContent = point.name;
     dispEl.textContent = point.dispersion;
     descEl.textContent = point.description || '—';
-
+    
     let images = [];
     if (point.images && Array.isArray(point.images) && point.images.length > 0) {
         images = point.images;
@@ -692,14 +682,14 @@ function showPointCard(pathology, point) {
     } else if (pathology.links && pathology.links.length > 0) {
         images = pathology.links;
     }
-
+    
     const carouselContainer = document.getElementById('carouselContainer');
     const carouselInner = document.getElementById('carouselInner');
     const prevBtn = document.querySelector('.carousel-control-prev');
     const nextBtn = document.querySelector('.carousel-control-next');
-
+    
     if (!carouselContainer || !carouselInner || !prevBtn || !nextBtn) return;
-
+    
     if (images.length === 0) {
         carouselContainer.style.display = 'none';
     } else {
@@ -712,14 +702,14 @@ function showPointCard(pathology, point) {
             slide.innerHTML = `<img src="${src}" class="d-block w-100" alt="Фото точки">`;
             carouselInner.appendChild(slide);
         });
-
+        
         if (images.length <= 1) {
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
         } else {
             prevBtn.style.display = '';
             nextBtn.style.display = '';
-
+            
             const carousel = document.getElementById('pointCarousel');
             let touchStartX = 0;
             carousel.addEventListener('touchstart', (e) => {
@@ -744,18 +734,20 @@ function showPointCard(pathology, point) {
     const modalBody = document.querySelector('#viewPointModal .modal-body');
     if (modalBody) {
         const activeUser = getActiveUser();
-        const oneHour = 60 * 60 * 1000;
-        const now = Date.now();
         let recentRecord = null;
         
+        // Ищем запись ТОЛЬКО текущего активного пользователя за СЕГОДНЯ.
+        // У каждого аккаунта — своя история, чужие записи не подставляются.
         if (activeUser) {
             const history = loadHistory();
-            const matching = history.records.filter(r =>
-                r.userId === activeUser.id &&
-                r.pointName === point.name &&
-                r.pathologyName === pathology.name
-            ).sort((a, b) => b.timestamp - a.timestamp);
-            if (matching.length > 0 && (now - matching[0].timestamp) < oneHour) {
+            const todayStr = new Date().toLocaleDateString('ru-RU');
+            const matching = history.records.filter(r => {
+                if (r.userId !== activeUser.id) return false;
+                if (r.pointName !== point.name) return false;
+                if (r.pathologyName !== pathology.name) return false;
+                return new Date(r.timestamp).toLocaleDateString('ru-RU') === todayStr;
+            }).sort((a, b) => b.timestamp - a.timestamp);
+            if (matching.length > 0) {
                 recentRecord = matching[0];
             }
         }
@@ -769,9 +761,14 @@ function showPointCard(pathology, point) {
         measurementSection.className = 'mt-3 p-2 border rounded';
         measurementSection.style.background = '#f8f9fa';
         
-        const hint = recentRecord
-            ? 'Запись за последний час существует — можно обновить показания.'
-            : 'Введите значения и нажмите ✓ на фото (или кнопку «Записать»).';
+        let hint;
+        if (!activeUser) {
+            hint = 'Нет активного пользователя. Нажмите ✓ на фото — попросим ввести имя.';
+        } else if (recentRecord) {
+            hint = `Запись за сегодня существует — можно обновить показания (${activeUser.name}).`;
+        } else {
+            hint = `Введите значения и нажмите ✓ на фото (или кнопку «Записать»). Пользователь: ${activeUser.name}.`;
+        }
         
         measurementSection.innerHTML = `
             <strong>Показания приборов:</strong>
@@ -801,7 +798,6 @@ function showPointCard(pathology, point) {
             saveBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                // Находим галочку в DOM и передаем её в функцию сохранения
                 const checkBtn = document.getElementById('pointCheckButton');
                 handleSaveMeasurement(pathology, point, checkBtn);
             });
@@ -835,13 +831,16 @@ function showPointCard(pathology, point) {
         `;
         checkBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
         
+        // === Галочка активна, если у ТЕКУЩЕГО пользователя есть запись за СЕГОДНЯ ===
         const activeUser = getActiveUser();
-        const oneHour = 60 * 60 * 1000;
         let isFresh = false;
         if (activeUser) {
             const lastTime = getLastRecordTime(point.name, pathology.name, activeUser.id);
-            const now = Date.now();
-            isFresh = lastTime && (now - lastTime) < oneHour;
+            if (lastTime) {
+                const lastDateStr = new Date(lastTime).toLocaleDateString('ru-RU');
+                const todayStr = new Date().toLocaleDateString('ru-RU');
+                isFresh = lastDateStr === todayStr;
+            }
         }
         checkBtn.style.color = isFresh ? 'rgba(40, 167, 69, 1)' : 'rgba(40, 167, 69, 0.3)';
         
@@ -1692,12 +1691,15 @@ function showUserRecords(userId) {
     const recordsListEl = document.getElementById('recordsList');
     if (!selectedUserNameEl || !recordsListEl) return;
     
+    chartState.userId = userId;
+    
     const user = getAllUsers().find(u => u.id === userId);
     selectedUserNameEl.textContent = user ? `Записи пользователя: ${user.name}` : '';
     
     const records = getRecordsByUser(userId);
     if (records.length === 0) {
         recordsListEl.innerHTML = '<p class="text-muted">Нет записей</p>';
+        if (chartState.mode === 'chart') renderFolChart(userId);
         return;
     }
     
@@ -1853,6 +1855,10 @@ function showUserRecords(userId) {
             if (point) showPointCard(pathology, point);
         });
     });
+    
+    if (chartState.mode === 'chart') {
+        renderFolChart(userId);
+    }
 }
 
 function updateMainPageGreeting() {
@@ -1903,12 +1909,325 @@ document.getElementById('addUserNameBtn')?.addEventListener('click', () => {
     }
 });
 
+// ================== ГРАФІК ФОЛЛЯ (НОВЕ) ==================
+const chartState = { mode: 'list', activeDate: null, userId: null };
+
+function ensureChartStyles() {
+    if (document.getElementById('chartStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'chartStyles';
+    style.textContent = `
+        .chart-date-picker-wrap {
+            display: flex; overflow-x: auto; gap: 6px; padding: 6px 2px;
+            -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+            border-bottom: 1px solid #eef2f7;
+        }
+        .chart-date-picker-wrap::-webkit-scrollbar { height: 5px; }
+        .chart-date-picker-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .chart-date-pill {
+            flex: 0 0 auto; border: 1px solid #d1d5db; background: #f8fafc; color: #94a3b8;
+            padding: 4px 10px; border-radius: 999px; font-size: 12px; cursor: pointer;
+            transition: all .15s ease; white-space: nowrap; font-weight: 500;
+        }
+        .chart-date-pill.has-data { color: #0e7490; border-color: #67e8f9; background: #ecfeff; }
+        .chart-date-pill.active { background: #0891b2; color: #fff; border-color: #0e7490;
+            box-shadow: 0 2px 6px rgba(8,145,178,0.35); }
+        .chart-date-pill.has-data.active { background: #0e7490; border-color: #0e7490; }
+        .chart-container {
+            width: 100%; background: #fff; border: 1px solid #e5e7eb;
+            border-radius: 8px; padding: 8px; overflow-x: auto;
+        }
+        .chart-legend {
+            display: flex; gap: 12px; justify-content: center; margin-top: 8px;
+            font-size: 11px; color: #475569; flex-wrap: wrap; align-items: center;
+        }
+        .chart-legend .swatch {
+            display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.15); vertical-align: -2px; margin-right: 4px;
+        }
+        .chart-empty { text-align: center; color: #94a3b8; padding: 40px 8px; font-size: 14px; }
+        .chart-x-label { cursor: pointer; font-weight: 500; }
+        .chart-x-label:hover { fill: #0a58ca !important; }
+    `;
+    document.head.appendChild(style);
+}
+
+function setHistoryViewMode(mode) {
+    chartState.mode = mode;
+    const listBtn = document.getElementById('viewModeList');
+    const chartBtn = document.getElementById('viewModeChart');
+    const recordsList = document.getElementById('recordsList');
+    const chartView = document.getElementById('chartView');
+    if (!listBtn || !chartBtn || !recordsList || !chartView) return;
+
+    if (mode === 'chart') {
+        listBtn.classList.remove('active');
+        chartBtn.classList.add('active');
+        recordsList.style.display = 'none';
+        chartView.style.display = 'block';
+        ensureChartStyles();
+        renderFolChart(chartState.userId);
+    } else {
+        chartBtn.classList.remove('active');
+        listBtn.classList.add('active');
+        recordsList.style.display = '';
+        chartView.style.display = 'none';
+    }
+}
+
+// ========== КОРОТКИЕ ПОДПИСИ ТОЧЕК ==========
+function shortPointLabel(name) {
+    if (!name) return '';
+    // Извлекаем код из начала строки: "1.3 КИП ..." → "1.3", "VG20 / BL20 ..." → "VG20", "GI4 / LI4 ..." → "GI4"
+    const match = name.match(/^([A-Za-zА-Яа-яІЇЄіїє]{0,3}\d+(?:[.\-]\d+)?)/);
+    if (match) return match[1];
+    // Fallback: первое слово до пробела или слэша
+    const first = name.split(/[\s\/]+/)[0];
+    return first.length <= 10 ? first : first.substring(0, 8) + '…';
+}
+
+// ========== ЦВЕТ ПО ШКАЛЕ КИП (0–100) ==========
+function getFolColor(val) {
+    const num = parseFloat(val);
+    if (isNaN(num)) return null;
+    if (num >= 0 && num <= 20)   return { fill: '#1f2937', stroke: '#111827', text: '#1f2937' };
+    if (num >= 21 && num <= 28)  return { fill: '#a855f7', stroke: '#6b21a8', text: '#6b21a8' };
+    if (num >= 29 && num <= 38)  return { fill: '#3b82f6', stroke: '#1e40af', text: '#1e40af' };
+    if (num >= 39 && num <= 48)  return { fill: '#6366f1', stroke: '#3730a3', text: '#3730a3' };
+    if (num >= 49 && num <= 65)  return { fill: '#22c55e', stroke: '#15803d', text: '#15803d' };
+    if (num >= 66 && num <= 80)  return { fill: '#f97316', stroke: '#c2410c', text: '#c2410c' };
+    if (num >= 81 && num <= 100) return { fill: '#ef4444', stroke: '#991b1b', text: '#991b1b' };
+    return null;
+}
+
+function getFolEmptyColor() {
+    return { fill: '#f1f5f9', stroke: '#cbd5e1', text: '#94a3b8' };
+}
+
+// ========== РЕНДЕР ГРАФИКА ==========
+function renderFolChart(userId) {
+    ensureChartStyles();
+    const container = document.getElementById('folChartContainer');
+    const datePicker = document.getElementById('chartDatePicker');
+    if (!container || !datePicker) return;
+
+    if (!userId) {
+        datePicker.innerHTML = '';
+        container.innerHTML = '<div class="chart-empty">Выберите пользователя</div>';
+        return;
+    }
+
+    const records = getRecordsByUser(userId);
+    if (records.length === 0) {
+        datePicker.innerHTML = '';
+        container.innerHTML = '<div class="chart-empty">Нет записей для отображения</div>';
+        return;
+    }
+
+    const byDate = {};
+    records.forEach(rec => {
+        const dateStr = new Date(rec.timestamp).toLocaleDateString('ru-RU');
+        if (!byDate[dateStr]) byDate[dateStr] = [];
+        byDate[dateStr].push(rec);
+    });
+
+    const sortedDates = Object.keys(byDate).sort((a, b) => {
+        const [d1, m1, y1] = a.split('.').map(Number);
+        const [d2, m2, y2] = b.split('.').map(Number);
+        return new Date(y2, m2 - 1, d2) - new Date(y1, m1 - 1, d1);
+    });
+
+    if (!chartState.activeDate || !byDate[chartState.activeDate]) {
+        let picked = null;
+        for (const dStr of sortedDates) {
+            const hasFol = byDate[dStr].some(r => {
+                const m = r.measurements;
+                return m && ((m.folLeft !== null && m.folLeft !== undefined) ||
+                             (m.folRight !== null && m.folRight !== undefined));
+            });
+            if (hasFol) { picked = dStr; break; }
+        }
+        chartState.activeDate = picked || sortedDates[0];
+    }
+
+    // ===== Date picker =====
+    datePicker.innerHTML = '';
+    sortedDates.forEach(dateStr => {
+        const recs = byDate[dateStr];
+        const hasFol = recs.some(r => {
+            const m = r.measurements;
+            return m && ((m.folLeft !== null && m.folLeft !== undefined) ||
+                         (m.folRight !== null && m.folRight !== undefined));
+        });
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'chart-date-pill' + (hasFol ? ' has-data' : '') + (dateStr === chartState.activeDate ? ' active' : '');
+        btn.textContent = dateStr;
+        btn.addEventListener('click', () => {
+            chartState.activeDate = dateStr;
+            renderFolChart(chartState.userId);
+        });
+        datePicker.appendChild(btn);
+    });
+
+    // ===== Данные за выбранную дату =====
+    const dayRecords = byDate[chartState.activeDate] || [];
+    const byPoint = {};
+    dayRecords.forEach(rec => {
+        if (!byPoint[rec.pointName]) {
+            byPoint[rec.pointName] = {
+                pointName: rec.pointName, pathologyName: rec.pathologyName,
+                left: null, right: null, timestamp: rec.timestamp
+            };
+        }
+        const m = rec.measurements;
+        if (m) {
+            if (m.folLeft !== null && m.folLeft !== undefined) byPoint[rec.pointName].left = m.folLeft;
+            if (m.folRight !== null && m.folRight !== undefined) byPoint[rec.pointName].right = m.folRight;
+        }
+    });
+
+    const points = Object.values(byPoint).sort((a, b) => a.timestamp - b.timestamp);
+    const hasAnyFol = points.some(p => p.left !== null || p.right !== null);
+    if (!hasAnyFol) {
+        container.innerHTML = `<div class="chart-empty">За ${chartState.activeDate} нет измерений фолля</div>`;
+        return;
+    }
+
+    // ===== SVG-геометрия =====
+    const padding = { top: 24, right: 16, bottom: 100, left: 42 };
+    const chartH = 300;
+    const minGroupW = 58;
+    const minWidth = padding.left + padding.right + points.length * minGroupW;
+    const width = Math.max(container.clientWidth || 0, minWidth, 320);
+    const height = chartH + padding.top + padding.bottom;
+    const innerW = width - padding.left - padding.right;
+
+    const maxVal = 100;
+    const yTicks = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
+    const groupW = innerW / points.length;
+    const barW = Math.min(groupW * 0.32, 22);
+    const gap = Math.max(3, groupW * 0.06);
+    const pairW = barW * 2 + gap;
+    const baseY = padding.top + chartH;
+
+    const esc = s => String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" style="display:block; font-family: system-ui, -apple-system, sans-serif;">`;
+
+    // Сетка
+    yTicks.forEach(val => {
+        const y = padding.top + chartH - (val / maxVal) * chartH;
+        svg += `<line x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" stroke="#e5e7eb" stroke-dasharray="3 4" />`;
+        svg += `<text x="${padding.left - 6}" y="${y + 4}" text-anchor="end" font-size="11" fill="#6b7280">${val}</text>`;
+    });
+
+    // Оптимальная зона 49–65
+    const yTopOpt = padding.top + chartH - (65 / maxVal) * chartH;
+    const yBotOpt = padding.top + chartH - (49 / maxVal) * chartH;
+    svg += `<rect x="${padding.left}" y="${yTopOpt}" width="${innerW}" height="${yBotOpt - yTopOpt}" fill="#86efac" opacity="0.13" />`;
+    svg += `<line x1="${padding.left}" y1="${yTopOpt}" x2="${width - padding.right}" y2="${yTopOpt}" stroke="#22c55e" stroke-dasharray="4 4" opacity="0.55" stroke-width="1" />`;
+    svg += `<line x1="${padding.left}" y1="${yBotOpt}" x2="${width - padding.right}" y2="${yBotOpt}" stroke="#22c55e" stroke-dasharray="4 4" opacity="0.55" stroke-width="1" />`;
+
+    // Оси
+    svg += `<line x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${baseY}" stroke="#9ca3af" stroke-width="1" />`;
+    svg += `<line x1="${padding.left}" y1="${baseY}" x2="${width - padding.right}" y2="${baseY}" stroke="#9ca3af" stroke-width="1" />`;
+
+    // ===== Столбики (цвет по шкале КИП) =====
+    const rotateLabels = points.length > 5;
+    points.forEach((p, i) => {
+        const cx = padding.left + groupW * i + groupW / 2;
+        const leftX = cx - pairW / 2;
+        const rightX = leftX + barW + gap;
+
+        const hasLeft = p.left !== null && p.left !== undefined;
+        const hasRight = p.right !== null && p.right !== undefined;
+        const leftVal = hasLeft ? Math.min(Math.max(p.left, 0), 100) : 0;
+        const rightVal = hasRight ? Math.min(Math.max(p.right, 0), 100) : 0;
+        const leftH = (leftVal / maxVal) * chartH;
+        const rightH = (rightVal / maxVal) * chartH;
+
+        const leftColors = hasLeft ? getFolColor(p.left) : getFolEmptyColor();
+        const rightColors = hasRight ? getFolColor(p.right) : getFolEmptyColor();
+
+        // Левый столбик (позиция «Л»)
+        svg += `<rect x="${leftX.toFixed(1)}" y="${(baseY - leftH).toFixed(1)}" width="${barW.toFixed(1)}" height="${leftH.toFixed(1)}" fill="${leftColors.fill}" stroke="${leftColors.stroke}" stroke-width="1" rx="2" />`;
+        if (hasLeft) {
+            svg += `<text x="${(leftX + barW / 2).toFixed(1)}" y="${(baseY - leftH - 4).toFixed(1)}" text-anchor="middle" font-size="10" fill="${leftColors.text}" font-weight="600">${p.left}</text>`;
+        }
+
+        // Правый столбик (позиция «П»)
+        svg += `<rect x="${rightX.toFixed(1)}" y="${(baseY - rightH).toFixed(1)}" width="${barW.toFixed(1)}" height="${rightH.toFixed(1)}" fill="${rightColors.fill}" stroke="${rightColors.stroke}" stroke-width="1" rx="2" />`;
+        if (hasRight) {
+            svg += `<text x="${(rightX + barW / 2).toFixed(1)}" y="${(baseY - rightH - 4).toFixed(1)}" text-anchor="middle" font-size="10" fill="${rightColors.text}" font-weight="600">${p.right}</text>`;
+        }
+
+        // Короткая метка Л/П под столбиком
+        svg += `<text x="${(leftX + barW / 2).toFixed(1)}" y="${(baseY + 12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#64748b">Л</text>`;
+        svg += `<text x="${(rightX + barW / 2).toFixed(1)}" y="${(baseY + 12).toFixed(1)}" text-anchor="middle" font-size="9" fill="#64748b">П</text>`;
+
+        // Подпись точки (короткий код) — кликабельная
+        const shortName = shortPointLabel(p.pointName);
+        const labelY = baseY + 30;
+        const safeName = esc(shortName);
+        const safeFull = esc(p.pointName);
+        const safePath = esc(p.pathologyName);
+        const labelAttrs = `data-point-name="${safeFull}" data-pathology="${safePath}" class="chart-x-label"`;
+        if (rotateLabels) {
+            svg += `<text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="end" font-size="11" fill="#0d6efd" ${labelAttrs} transform="rotate(-32 ${cx.toFixed(1)} ${labelY.toFixed(1)})">${safeName}</text>`;
+        } else {
+            svg += `<text x="${cx.toFixed(1)}" y="${labelY.toFixed(1)}" text-anchor="middle" font-size="12" fill="#0d6efd" ${labelAttrs}>${safeName}</text>`;
+        }
+    });
+
+    svg += '</svg>';
+
+    // ===== Легенда: цветовая шкала КИП =====
+    container.innerHTML = svg + `
+        <div class="chart-legend">
+            <span><span class="swatch" style="background:#1f2937; border-color:#111827;"></span>0–20</span>
+            <span><span class="swatch" style="background:#a855f7; border-color:#6b21a8;"></span>21–28</span>
+            <span><span class="swatch" style="background:#3b82f6; border-color:#1e40af;"></span>29–38</span>
+            <span><span class="swatch" style="background:#6366f1; border-color:#3730a3;"></span>39–48</span>
+            <span><span class="swatch" style="background:#22c55e; border-color:#15803d;"></span><strong>49–65 (оптимум)</strong></span>
+            <span><span class="swatch" style="background:#f97316; border-color:#c2410c;"></span>66–80</span>
+            <span><span class="swatch" style="background:#ef4444; border-color:#991b1b;"></span>81–100</span>
+        </div>
+        <div style="text-align:center; font-size:11px; color:#64748b; margin-top:6px;">
+            Л — левая сторона, П — правая сторона · цвет по шкале КИП Фолля
+        </div>`;
+
+    // ===== Клик по метке точки → карточка точки =====
+    container.querySelectorAll('.chart-x-label').forEach(el => {
+        el.addEventListener('click', () => {
+            const pointName = el.getAttribute('data-point-name');
+            const pathologyName = el.getAttribute('data-pathology');
+            const pathology = pathologiesData.find(p => p.name === pathologyName);
+            const point = pathology?.point.find(p => p.name === pointName)
+                || pathology?.point.find(p => p.name.split('/')[0].trim() === pointName.split('/')[0].trim());
+            if (point) showPointCard(pathology, point);
+            else showToast('Точка не найдена в текущем атласе');
+        });
+    });
+}
+
+// Перерисовка графика при ресайзе
+let chartResizeTimer = null;
+window.addEventListener('resize', () => {
+    if (chartState.mode !== 'chart' || !chartState.userId) return;
+    clearTimeout(chartResizeTimer);
+    chartResizeTimer = setTimeout(() => renderFolChart(chartState.userId), 150);
+});
+
+document.getElementById('viewModeList')?.addEventListener('click', () => setHistoryViewMode('list'));
+document.getElementById('viewModeChart')?.addEventListener('click', () => setHistoryViewMode('chart'));
+
 // ========== ІНІЦІАЛІЗАЦІЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     appStorage.migrateIfNeeded();
     
-    // Вимкнути автопідстановку браузера для поля патології,
-    // щоб "правая ладонь" не замінювалась на "левая ладонь"
     const pathInput = document.getElementById('pointPathology');
     if (pathInput) {
         pathInput.setAttribute('autocomplete', 'off');

@@ -78,9 +78,23 @@
             <div class="accordion mb-3" id="usersAccordion"></div>
             <!-- Детали выбранного пользователя (записи) -->
             <div id="userRecordsContainer" style="display: none;">
-                <h3 class="h5" id="selectedUserName"></h3>
-                <div id="recordsList" class="list-group"></div>
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <h3 class="h5 mb-0" id="selectedUserName"></h3>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Режим отображения">
+            <button type="button" class="btn btn-outline-secondary active" id="viewModeList">
+                <i class="bi bi-list-ul"></i> Список
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="viewModeChart">
+                <i class="bi bi-bar-chart-fill"></i> График
+            </button>
+        </div>
+    </div>
+    <div id="recordsList" class="list-group"></div>
+    <div id="chartView" style="display: none;">
+        <div id="chartDatePicker" class="chart-date-picker-wrap mb-2"></div>
+        <div id="folChartContainer" class="chart-container"></div>
+    </div>
+</div>
         </div>
 
         <!-- Страница поиска (скрыта) -->
