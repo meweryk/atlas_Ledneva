@@ -6,7 +6,7 @@
 //  - Предзагрузка всех фото из pictures/ через point.json
 // =============================================================
 
-const CACHE_VERSION = 'v5.01';
+const CACHE_VERSION = 'v5.02';
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -129,7 +129,6 @@ self.addEventListener('install', event => {
         })
         .then(() => {
             console.log('[SW Atlas] Установка завершена, активируюсь сразу');
-            return self.skipWaiting();
         })
         .catch(err => {
             console.error('[SW Atlas] Ошибка install:', err);

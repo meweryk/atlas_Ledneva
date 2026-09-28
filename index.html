@@ -470,32 +470,51 @@
     <script src="./js/app.js"></script>
     <script src="./js/nozod.js"></script>
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // Определяем базовый путь автоматически
-                const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
+            
+            navigator.serviceWorker.register(`${basePath}/service-worker.js`, {
+                scope: `${basePath}/`
+            }).then(reg => {
+                console.log('SW registered:', reg);
                 
-                navigator.serviceWorker.register(`${basePath}/service-worker.js`, {
-                    scope: `${basePath}/`
-                }).then(reg => {
-                    console.log('SW registered:', reg);
-                    
-                    // Проверка обновлений
-                    setInterval(() => reg.update(), 5 * 60 * 1000);
-                    
-                    reg.addEventListener('updatefound', () => {
-                        const newWorker = reg.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                if (confirm('Доступна новая версия приложения. Обновить?')) {
-                                    window.location.reload();
-                                }
-                            }
-                        });
+                // Периодическая проверка обновлений
+                setInterval(() => reg.update(), 5 * 60 * 1000);
+                
+                // Случай 1: страница открыта, SW нашёл обновление в реальном времени
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    if (!newWorker) return;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            promptUpdate(newWorker);
+                        }
                     });
-                }).catch(err => console.log('SW registration failed:', err));
+                });
+                
+                // Случай 2: страница открыта ПОСЛЕ того, как SW уже был установлен
+                // (например, пользователь закрыл вкладку во время долгой установки)
+                if (reg.waiting && navigator.serviceWorker.controller) {
+                    promptUpdate(reg.waiting);
+                }
+            }).catch(err => console.log('SW registration failed:', err));
+            
+            function promptUpdate(worker) {
+                if (confirm('Доступна новая версия приложения. Обновить?')) {
+                    worker.postMessage({ type: 'SKIP_WAITING' });
+                }
+            }
+            
+            // Перезагрузка один раз после того, как новый SW встал под контроль
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
             });
-        }
-    </script>
+        });
+    }
+</script>
 </body>
 </html>
