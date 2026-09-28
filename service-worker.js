@@ -1,56 +1,117 @@
 // =============================================================
 //  Service Worker для Атласа Леднёва
-//  Версия: v5.00 — переход на относительные пути + локальный vendor.
-//  Деплой: GitHub Pages (любая подпапка, имя репозитория не важно).
+//  Версия: v5.01
+//  - Относительные пути (GitHub Pages, любая подпапка)
+//  - Локальный vendor (Bootstrap, Icons, Tailwind)
+//  - Предзагрузка всех фото из pictures/ через point.json
 // =============================================================
 
-const CACHE_VERSION = 'v5.00';
+const CACHE_VERSION = 'v5.01';
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
 
 // Базовый URL = папка, где лежит service-worker.js.
-// Всё, что под ним, будет закешировано корректно, независимо от имени репозитория.
 const BASE_URL = new URL('./', self.location);
-
-// Fallback для навигации, если страница не в кеше.
-// Через `new URL` получаем корректный путь от BASE_URL.
 const FALLBACK_HTML = new URL('./index.html', BASE_URL).pathname;
 
-// ---------- Список статических ресурсов ----------
-// ВАЖНО: имена файлов должны точно совпадать по регистру
-// с файлами в репозитории (GitHub Pages — Linux, регистр критичен).
+// ---------- Статические ресурсы ----------
 const STATIC_URLS = [
     './',
     './index.html',
-    './LUXE METALLICS.html', // пробел в имени — оставлен как есть
+    './LUXE METALLICS.html',
     './manifest.json',
     './point.json',
     './nozod.json',
     
-    // JS и CSS приложения
+    // JS / CSS приложения
     './css/style.css',
     './js/app.js',
     './js/star.js',
     './js/nozod.js',
     
-    // Bootstrap (локально)
+    // Локальный Bootstrap
     './vendor/bootstrap.min.css',
     './vendor/bootstrap.bundle.min.js',
     './vendor/bootstrap-icons.min.css',
     './vendor/fonts/bootstrap-icons.woff',
     './vendor/fonts/bootstrap-icons.woff2',
     
-    // Tailwind (локально собранный)
+    // Локальный Tailwind
     './vendor/tailwind.css',
     
-    // Иконки PWA
-    './pictures/icon-192.png'
+    // Иконки PWA (если чего-то нет — per-file catch в install это переживёт)
+    './pictures/icon-192.png',
+    './pictures/icon-512.png'
 ];
 
+// ---------- Предзагрузка всех фото из point.json ----------
+// SW не может «прочитать содержимое папки», поэтому берём список
+// изображений из point.json (поля images у точек и links у патологий)
+// и кешируем их в IMAGES_CACHE_NAME.
+async function precachePointImages() {
+    try {
+        const resp = await fetch('./point.json', { cache: 'no-cache' });
+        if (!resp.ok) {
+            console.warn('[SW Atlas] point.json недоступен, пропускаю предзагрузку фото');
+            return;
+        }
+        const data = await resp.json();
+        if (!Array.isArray(data)) return;
+        
+        const urls = new Set();
+        
+        const collect = (obj) => {
+            if (!obj) return;
+            // у точек: images (массив строк)
+            if (Array.isArray(obj.images)) {
+                obj.images.forEach(u => {
+                    if (typeof u === 'string' && u.trim()) urls.add(u.trim());
+                });
+            }
+            // у патологий: links (массив строк)
+            if (Array.isArray(obj.links)) {
+                obj.links.forEach(u => {
+                    if (typeof u === 'string' && u.trim()) urls.add(u.trim());
+                });
+            }
+            // иногда images может быть строкой с запятыми
+            if (typeof obj.images === 'string' && obj.images.trim()) {
+                obj.images.split(',').forEach(u => {
+                    if (u.trim()) urls.add(u.trim());
+                });
+            }
+        };
+        
+        data.forEach(pathology => {
+            collect(pathology);
+            (pathology.point || []).forEach(collect);
+        });
+        
+        // Оставляем только same-origin (внешние http(s) — не наш случай,
+        // они и так лениво закешируются при первом открытии)
+        const localUrls = Array.from(urls).filter(u => {
+            if (/^https?:\/\//i.test(u)) return false;
+            if (u.startsWith('data:')) return false;
+            return true;
+        });
+        
+        console.log('[SW Atlas] Найдено изображений в point.json:', localUrls.length);
+        
+        const cache = await caches.open(IMAGES_CACHE_NAME);
+        await Promise.all(localUrls.map(u =>
+            cache.add(u).catch(err => {
+                console.warn('[SW Atlas] Не закешировано фото:', u, '—', err.message);
+            })
+        ));
+        
+        console.log('[SW Atlas] Предзагрузка фото завершена');
+    } catch (e) {
+        console.warn('[SW Atlas] Ошибка предзагрузки фото:', e);
+    }
+}
+
 // ---------- INSTALL ----------
-// Кешируем по одному файлу, чтобы один 404 не сломал всю установку.
-// (Важно: cache.addAll упал бы целиком из-за одной отсутствующей картинки.)
 self.addEventListener('install', event => {
     console.log('[SW Atlas] Install — версия:', CACHE_VERSION);
     event.waitUntil(
@@ -58,11 +119,14 @@ self.addEventListener('install', event => {
         .then(cache => Promise.all(
             STATIC_URLS.map(url =>
                 cache.add(url).catch(err => {
-                    // Логируем, но не прерываем установку
                     console.warn('[SW Atlas] Не закеширован:', url, '—', err.message);
                 })
             )
         ))
+        .then(() => {
+            // После статики — тянем фотографии из point.json
+            return precachePointImages();
+        })
         .then(() => {
             console.log('[SW Atlas] Установка завершена, активируюсь сразу');
             return self.skipWaiting();
@@ -74,7 +138,6 @@ self.addEventListener('install', event => {
 });
 
 // ---------- ACTIVATE ----------
-// Удаляем все кеши, кроме текущей версии.
 self.addEventListener('activate', event => {
     console.log('[SW Atlas] Activate — чищу старые кеши');
     const currentCaches = [STATIC_CACHE_NAME, IMAGES_CACHE_NAME, DATA_CACHE_NAME];
@@ -98,21 +161,16 @@ self.addEventListener('activate', event => {
 // ---------- FETCH ----------
 self.addEventListener('fetch', event => {
     const request = event.request;
-    
-    // Игнорируем не-GET
     if (request.method !== 'GET') return;
     
     const url = new URL(request.url);
     
-    // ---- Cross-origin (например, Google Fonts) ----
-    // Кешируем по той же схеме, что и локальные, но через no-cors-безопасный add.
+    // ---- Cross-origin (Google Fonts и т. п.) ----
     if (url.origin !== self.location.origin) {
-        // Пробуем кеш, иначе — сеть. Если и сети нет — тихо фейлим (шрифт откатится на системный).
         event.respondWith(
             caches.match(request).then(cached => {
                 if (cached) return cached;
                 return fetch(request).then(response => {
-                    // Кешируем только успешные opaque/basic-ответы
                     if (response && (response.ok || response.type === 'opaque')) {
                         const clone = response.clone();
                         caches.open(STATIC_CACHE_NAME).then(c => c.put(request, clone)).catch(() => {});
@@ -142,7 +200,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // ---- 2) point.json — network-first, кеш как fallback ----
+    // ---- 2) point.json — network-first ----
     if (url.pathname.endsWith('/point.json') || url.pathname.endsWith('point.json')) {
         event.respondWith(
             fetch(request, { cache: 'no-cache' })
@@ -161,7 +219,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // ---- 3) nozod.json — аналогично ----
+    // ---- 3) nozod.json — network-first ----
     if (url.pathname.endsWith('/nozod.json') || url.pathname.endsWith('nozod.json')) {
         event.respondWith(
             fetch(request, { cache: 'no-cache' })
@@ -180,10 +238,7 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // ---- 4) Навигационные запросы (HTML-страницы) ----
-    // Специальная логика: сеть → кеш → fallback index.html.
-    // Это спасает, если пользователь офлайн открыл /LUXE%20METALLICS.html —
-    // при отсутствии в кеше он получит index.html.
+    // ---- 4) Навигационные запросы (HTML) ----
     if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
         event.respondWith(
             fetch(request)
@@ -198,7 +253,7 @@ self.addEventListener('fetch', event => {
                 console.log('[SW Atlas] Навигация офлайн, ищу в кеше:', url.pathname);
                 return caches.match(request).then(cached => {
                     if (cached) return cached;
-                    // Пробуем декодировать пробел в имени файла
+                    // Пробуем декодировать %20 в имени файла
                     const decoded = decodeURIComponent(url.pathname);
                     return caches.match(new URL(decoded, self.location.origin).pathname)
                         .then(cached2 => cached2 || caches.match(FALLBACK_HTML));
@@ -211,7 +266,6 @@ self.addEventListener('fetch', event => {
     // ---- 5) Все остальные same-origin ресурсы — stale-while-revalidate ----
     event.respondWith(
         caches.match(request).then(cached => {
-            // Фоновое обновление
             const networkPromise = fetch(request).then(response => {
                 if (response && response.ok && response.type === 'basic') {
                     const clone = response.clone();
@@ -221,11 +275,9 @@ self.addEventListener('fetch', event => {
             }).catch(() => null);
             
             if (cached) {
-                // Отдаём кеш сразу, сеть обновит его в фоне
                 networkPromise.catch(() => {});
                 return cached;
             }
-            // Нет в кеше — ждём сеть
             return networkPromise.then(resp => resp || new Response('', {
                 status: 504,
                 statusText: 'Offline'
