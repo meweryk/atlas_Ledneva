@@ -209,22 +209,6 @@
         </div>
       </div>
 
-      <!-- БЕГУЩАЯ СТРОКА -->
-      <div id="micTickerBar" class="hidden w-full bg-slate-950/80 backdrop-blur-md border-t border-b border-amber-500/30 px-4 py-2 transition-all">
-        <div class="container mx-auto flex items-center gap-3">
-          <span class="text-amber-400 font-bold text-xs uppercase tracking-wider whitespace-nowrap flex items-center gap-2 shrink-0">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-            </span>
-            <span id="micTickerLabel">🎤 Микрофон:</span>
-          </span>
-          <div id="micTickerContent" class="flex items-center gap-2 overflow-x-auto py-0.5 text-xs font-mono whitespace-nowrap w-full">
-            <span class="text-slate-500 italic">Слушаем окружение...</span>
-          </div>
-        </div>
-      </div>
-
       <!-- ПАНЕЛЬ ПЛЕЙЛИСТА -->
       <div id="playlistPanel" class="hidden absolute top-full left-4 right-4 md:left-auto md:right-6 md:w-96 z-30 glass-panel rounded-2xl p-3 shadow-2xl mt-2">
         <div class="flex items-center justify-between mb-2 pb-2 border-b border-white/10">
@@ -315,9 +299,6 @@
     const fluidCanvas = document.getElementById('fluidCanvas');
     const glareMultiplier = document.getElementById('glareMultiplier');
     const glareSpeedLabel = document.getElementById('glareSpeedLabel');
-    const micTickerBar = document.getElementById('micTickerBar');
-    const micTickerContent = document.getElementById('micTickerContent');
-    const micTickerLabel = document.getElementById('micTickerLabel');
     const ctx = fluidCanvas.getContext('2d');
 
     let audioCtx = null;
@@ -344,10 +325,6 @@
     let playlist = [];
     let currentTrackIndex = -1;
 
-    // Троттлинг тикера
-    let lastTickerUpdate = 0;
-    let lastTickerKey = '';
-
     let animationFrameId = null;
     let colorNodes = [];
     let particles = [];
@@ -372,50 +349,49 @@
     // Карта мерцания звёзд (сохраняется между пересчётами)
     const starTwinkleMap = new Map();
 
-    // Цвета известных ярких звёзд по спектральному классу (приблизительно)
     // Цвета звёзд по спектральному классу (усиленная насыщенность).
-// O/B — голубые, A — бело-голубые, F — бело-жёлтые,
-// G — жёлтые, K — оранжевые, M — красные.
-const STAR_COLORS = {
-  // ─── O / B — очень горячие, голубые ───
-  'Rigel': [155, 195, 255],
-  'Spica': [160, 200, 255],
-  'Bellatrix': [170, 205, 255],
-  'Alnilam': [165, 200, 255],
-  'Regulus': [175, 210, 255],
-  'Deneb': [180, 210, 255],
-  'Adhara': [155, 195, 255],
-  'Wezen': [175, 210, 255],
-  'Mintaka': [165, 200, 255],
-  
-  // ─── A — бело-голубые ───
-  'Vega': [195, 215, 255],
-  'Sirius': [200, 220, 255],
-  'Castor': [190, 210, 255],
-  'Alpheratz': [190, 210, 255],
-  'Altair': [220, 235, 255],
-  
-  // ─── F — бело-жёлтые ───
-  'Procyon': [245, 245, 235],
-  'Polaris': [250, 245, 225],
-  'Sadr': [250, 245, 225],
-  
-  // ─── G — жёлтые ───
-  'Capella': [255, 245, 200],
-  'Menkalinan': [250, 245, 210],
-  
-  // ─── K — оранжевые ───
-  'Arcturus': [255, 215, 155],
-  'Pollux': [255, 220, 165],
-  'Aldebaran': [255, 200, 135],
-  'Dubhe': [255, 215, 160],
-  'Hamal': [255, 215, 160],
-  
-  // ─── M — красные ───
-  'Betelgeuse': [255, 150, 100],
-  'Antares': [255, 140, 90],
-  'Sargas': [255, 200, 160]
-};
+    // O/B — голубые, A — бело-голубые, F — бело-жёлтые,
+    // G — жёлтые, K — оранжевые, M — красные.
+    const STAR_COLORS = {
+      // ─── O / B — очень горячие, голубые ───
+      'Rigel': [155, 195, 255],
+      'Spica': [160, 200, 255],
+      'Bellatrix': [170, 205, 255],
+      'Alnilam': [165, 200, 255],
+      'Regulus': [175, 210, 255],
+      'Deneb': [180, 210, 255],
+      'Adhara': [155, 195, 255],
+      'Wezen': [175, 210, 255],
+      'Mintaka': [165, 200, 255],
+      
+      // ─── A — бело-голубые ───
+      'Vega': [195, 215, 255],
+      'Sirius': [200, 220, 255],
+      'Castor': [190, 210, 255],
+      'Alpheratz': [190, 210, 255],
+      'Altair': [220, 235, 255],
+      
+      // ─── F — бело-жёлтые ───
+      'Procyon': [245, 245, 235],
+      'Polaris': [250, 245, 225],
+      'Sadr': [250, 245, 225],
+      
+      // ─── G — жёлтые ───
+      'Capella': [255, 245, 200],
+      'Menkalinan': [250, 245, 210],
+      
+      // ─── K — оранжевые ───
+      'Arcturus': [255, 215, 155],
+      'Pollux': [255, 220, 165],
+      'Aldebaran': [255, 200, 135],
+      'Dubhe': [255, 215, 160],
+      'Hamal': [255, 215, 160],
+      
+      // ─── M — красные ───
+      'Betelgeuse': [255, 150, 100],
+      'Antares': [255, 140, 90],
+      'Sargas': [255, 200, 160]
+    };
 
     /* ---------- УТИЛИТЫ ---------- */
 
@@ -610,95 +586,94 @@ const STAR_COLORS = {
     }
 
     function drawRealStars() {
-  if (!showRealStars || !realStarData) return;
+      if (!showRealStars || !realStarData) return;
 
-  const w = canvasW;
-  const h = canvasH;
-  const time = performance.now() / 1000;
+      const w = canvasW;
+      const h = canvasH;
+      const time = performance.now() / 1000;
 
-  // Эллиптическая проекция: зенит в центре, горизонт по краю эллипса.
-  // Север сверху, восток справа, юг снизу, запад слева.
-  // Эллипс растянут почти на весь экран; центр чуть ниже середины,
-  // чтобы кнопки верхней панели не перекрывали созвездия.
-  const cx = w * 0.50;
-  const cy = h * 0.56;
-  const rx = w * 0.52;
-  const ry = h * 0.50;
+      // Эллиптическая проекция: зенит в центре, горизонт по краю эллипса.
+      // Север сверху, восток справа, юг снизу, запад слева.
+      // Эллипс растянут почти на весь экран; центр чуть ниже середины,
+      // чтобы кнопки верхней панели не перекрывали созвездия.
+      const cx = w * 0.50;
+      const cy = h * 0.56;
+      const rx = w * 0.52;
+      const ry = h * 0.50;
 
-  function project(az, alt) {
-    const distFromZenith = Math.max(0, (90 - alt) / 90);
-    const r = Math.pow(distFromZenith, 0.7);
-    const azRad = az * Math.PI / 180;
-    return {
-      x: cx + rx * r * Math.sin(azRad),
-      y: cy - ry * r * Math.cos(azRad)
-    };
-  }
+      function project(az, alt) {
+        const distFromZenith = Math.max(0, (90 - alt) / 90);
+        const r = Math.pow(distFromZenith, 0.7);
+        const azRad = az * Math.PI / 180;
+        return {
+          x: cx + rx * r * Math.sin(azRad),
+          y: cy - ry * r * Math.cos(azRad)
+        };
+      }
 
-  // Звёзды — с мерцанием, цветом и разной яркостью
-  realStarData.stars.forEach(function (s) {
-    const p = project(s.azimuth, s.altitude);
+      // Звёзды — с мерцанием, цветом и разной яркостью
+      realStarData.stars.forEach(function (s) {
+        const p = project(s.azimuth, s.altitude);
 
-    // Размер — уменьшен по сравнению с прошлой версией (было 2.8 - mag*0.45)
-    const size = Math.max(0.55, 2.0 - s.mag * 0.38);
+        // Размер — уменьшен по сравнению с прошлой версией (было 2.8 - mag*0.45)
+        const size = Math.max(0.55, 2.0 - s.mag * 0.38);
 
-    // Яркость — верхний предел 0.85, а не 1.0
-    const baseAlpha = Math.max(0.28, Math.min(0.85, 0.85 - s.mag * 0.13));
+        // Яркость — верхний предел 0.85, а не 1.0
+        const baseAlpha = Math.max(0.28, Math.min(0.85, 0.85 - s.mag * 0.13));
 
-    // Мерцание: одно значение на звезду, сохраняется между кадрами
-    let tw = starTwinkleMap.get(s.name);
-    if (!tw) {
-      tw = {
-        phase: Math.random() * Math.PI * 2,
-        speed: 1.5 + Math.random() * 2.5,
-        amp:   0.10 + Math.random() * 0.18
-      };
-      starTwinkleMap.set(s.name, tw);
+        // Мерцание: одно значение на звезду, сохраняется между кадрами
+        let tw = starTwinkleMap.get(s.name);
+        if (!tw) {
+          tw = {
+            phase: Math.random() * Math.PI * 2,
+            speed: 1.5 + Math.random() * 2.5,
+            amp:   0.10 + Math.random() * 0.18
+          };
+          starTwinkleMap.set(s.name, tw);
+        }
+
+        const flicker = Math.sin(time * tw.speed + tw.phase) * tw.amp;
+        const alpha = Math.max(0.12, Math.min(1, baseAlpha + flicker));
+
+        // Цвет: сначала пробуем по имени, потом — случайный оттенок из
+        // палитры галактических звёзд (голубоватые, белые, желтоватые).
+        let col = STAR_COLORS[s.name];
+        if (!col) {
+          // Стабильный оттенок на звезду — генерируем один раз
+          let tint = starTwinkleMap.get(s.name + '_tint');
+          if (!tint) {
+            const palette = [
+              [200, 215, 255],   // голубовато-белая
+              [225, 230, 250],   // бело-голубая
+              [245, 240, 230],   // тёпло-белая
+              [255, 245, 215]    // желтоватая
+            ];
+            tint = palette[Math.floor(Math.random() * palette.length)];
+            starTwinkleMap.set(s.name + '_tint', tint);
+          }
+          col = tint;
+        }
+        const cr = col[0], cg = col[1], cb = col[2];
+
+        // Ореол — только для самых ярких (mag < 1.0), и он компактнее
+        if (s.mag < 1.0) {
+          const haloR = size * 3;
+          const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR);
+          grad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.45})`);
+          grad.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Ядро
+        ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+        ctx.fill();
+      });
     }
-
-    const flicker = Math.sin(time * tw.speed + tw.phase) * tw.amp;
-    const alpha = Math.max(0.12, Math.min(1, baseAlpha + flicker));
-
-    // Цвет: голубоватый для горячих, тёплый для холодных
-    // Цвет: сначала пробуем по имени, потом — случайный оттенок из
-// палитры галактических звёзд (голубоватые, белые, желтоватые).
-let col = STAR_COLORS[s.name];
-if (!col) {
-  // Стабильный оттенок на звезду — генерируем один раз
-  let tint = starTwinkleMap.get(s.name + '_tint');
-  if (!tint) {
-    const palette = [
-      [200, 215, 255],   // голубовато-белая
-      [225, 230, 250],   // бело-голубая
-      [245, 240, 230],   // тёпло-белая
-      [255, 245, 215]    // желтоватая
-    ];
-    tint = palette[Math.floor(Math.random() * palette.length)];
-    starTwinkleMap.set(s.name + '_tint', tint);
-  }
-  col = tint;
-}
-const cr = col[0], cg = col[1], cb = col[2];
-
-    // Ореол — только для самых ярких (mag < 1.0), и он компактнее
-    if (s.mag < 1.0) {
-      const haloR = size * 3;
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, haloR);
-      grad.addColorStop(0, `rgba(${cr}, ${cg}, ${cb}, ${alpha * 0.45})`);
-      grad.addColorStop(1, `rgba(${cr}, ${cg}, ${cb}, 0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, haloR, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Ядро
-    ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
 
     /* ---------- ЦВЕТОВЫЕ УЗЛЫ И ЧАСТИЦЫ ---------- */
 
@@ -786,32 +761,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         `;
         activeSwatches.appendChild(badge);
       });
-    }
-
-    function updateMicTicker(calculatedData) {
-      if (!micTickerContent) return;
-
-      const now = performance.now();
-      if (now - lastTickerUpdate < 150) return;
-
-      const key = (calculatedData || []).map(i => i.freq).join('|');
-      if (key === lastTickerKey) return;
-      lastTickerKey = key;
-      lastTickerUpdate = now;
-
-      if (!calculatedData || calculatedData.length === 0) {
-        micTickerContent.innerHTML = `<span class="text-slate-500 italic">Нет активных частот...</span>`;
-        return;
-      }
-
-      micTickerContent.innerHTML = calculatedData.map(item => `
-        <div class="inline-flex items-center gap-1.5 bg-black/60 px-2.5 py-1 rounded-full border border-amber-500/30 text-xs font-mono shrink-0 shadow-md">
-          <span class="w-2.5 h-2.5 rounded-full border border-white/40" style="background-color: ${item.color.hex}"></span>
-          <span class="text-amber-200 font-bold">${item.freq} Гц</span>
-          <span class="text-slate-400">•</span>
-          <span class="text-cyan-300">${item.color.hex}</span>
-        </div>
-      `).join('');
     }
 
     /* ---------- ПЛЕЙЛИСТ UI ---------- */
@@ -938,11 +887,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         isFileActive = true;
         vizMode = 'file';
 
-        micTickerBar.classList.remove('hidden');
-        if (micTickerLabel) {
-          micTickerLabel.textContent = `🎵 ${track.name}`;
-        }
-
         if (!isPlaying) {
           launchShow('file');
         } else {
@@ -985,7 +929,6 @@ const cr = col[0], cg = col[1], cb = col[2];
           playTrackFromPlaylist(nextIndex);
         } else {
           if (!isMicActive) {
-            micTickerBar.classList.add('hidden');
             if (isPlaying) switchVizToText();
           }
         }
@@ -1011,10 +954,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         try { URL.revokeObjectURL(t.url); } catch(e) {}
       });
       playlist = [];
-
-      if (!isMicActive) {
-        micTickerBar.classList.add('hidden');
-      }
 
       if (wasPlaying && isPlaying && !isMicActive) {
         switchVizToText();
@@ -1067,7 +1006,6 @@ const cr = col[0], cg = col[1], cb = col[2];
 
     function updateVizFromPeaks(calculatedData, sourceLabel) {
       if (calculatedData.length === 0) {
-        updateMicTicker([]);
         colorNodes.forEach(n => {
           n.targetR = 20;
           n.targetG = 25;
@@ -1076,7 +1014,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         return;
       }
 
-      updateMicTicker(calculatedData);
       updateMicSwatches(calculatedData, sourceLabel);
 
       if (colorNodes.length === 0) {
@@ -1236,8 +1173,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         isMicActive = true;
         iconMicOff.classList.add('hidden');
         iconMicOn.classList.remove('hidden');
-        micTickerBar.classList.remove('hidden');
-        if (micTickerLabel) micTickerLabel.textContent = '🎤 Микрофон:';
 
         if (!isPlaying) {
           launchShow('mic');
@@ -1270,8 +1205,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         analyserNode = null;
       }
       micDataArray = null;
-      lastTickerKey = '';
-      lastTickerUpdate = 0;
 
       isMicActive = false;
       iconMicOff.classList.remove('hidden');
@@ -1281,12 +1214,7 @@ const cr = col[0], cg = col[1], cb = col[2];
         if (isFileActive) {
           try { audioPlayer.play(); } catch(e) {}
           vizMode = 'file';
-          micTickerBar.classList.remove('hidden');
-          if (micTickerLabel && currentFileName) {
-            micTickerLabel.textContent = `🎵 ${currentFileName}`;
-          }
         } else {
-          micTickerBar.classList.add('hidden');
           switchVizToText();
         }
       }
@@ -1451,7 +1379,6 @@ const cr = col[0], cg = col[1], cb = col[2];
           try { audioPlayer.pause(); } catch(e) {}
           isFileActive = false;
           currentTrackIndex = -1;
-          micTickerBar.classList.add('hidden');
         }
         mode = 'text';
       }
@@ -1504,7 +1431,6 @@ const cr = col[0], cg = col[1], cb = col[2];
         try { audioPlayer.pause(); } catch(e) {}
         isFileActive = false;
         currentTrackIndex = -1;
-        micTickerBar.classList.add('hidden');
       }
 
       if (isInfoOpen) toggleInfoDrawer();
