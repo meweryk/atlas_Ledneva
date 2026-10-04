@@ -1,7 +1,19 @@
 /* ============================================================
-   nozod.js — вкладка «Нозод»: аккордеон + воспроизведение + WAV
-   Стерео: левый канал sin(ωt − π/2), правый sin(ωt) — сдвиг 90°.
-   Навигация управляется из app.js через window.Nozod.
+   nozod.js — вкладка «Нозод»
+   Функционал:
+     • аккордеон по категориям
+     • воспроизведение (стерео, сдвиг 90°)
+     • экспорт WAV (32-bit PCM, stereo, 48 кГц)
+     • поиск по названию / описанию / функции (без учёта регистра)
+     • добавление пользовательских нозодов (localStorage, суффикс _Locale)
+     • удаление ТОЛЬКО пользовательских нозодов
+   Безопасность:
+     • весь рендер пользовательских данных — через escapeHtml()
+     • атрибуты (data-*) экранируются
+     • вход валидируется: лимиты длины/количества, частоты — только
+       положительные конечные числа, удаление управляющих символов
+     • никаких eval/Function/innerHTML из сырых данных
+     • localStorage изолирован префиксом atlas_ledneva_
    ============================================================ */
 (function () {
     'use strict';
@@ -12,13 +24,30 @@
     const BITS = 32;
     const DEFAULT_DURATION_SEC = 60;
 
+    /* ---------- Константы локального хранилища ---------- */
+    const STORAGE_PREFIX = 'atlas_ledneva_';
+    const LOCAL_NOZOD_KEY = STORAGE_PREFIX + 'user_nozodes';
+    const LOCALE_SUFFIX = '_Locale';
+
+    /* ---------- Лимиты (защита от переполнения / абьюза) ---------- */
+    const MAX_LOCAL_NOZODS = 500;
+    const MAX_NAME_LEN = 120;
+    const MAX_TEXT_LEN = 2000;
+    const MAX_SOURCE_LEN = 60;
+    const MAX_CATEGORY_LEN = 40;
+    const MAX_FREQS = 64;
+
+    /* ---------- Состояние ---------- */
     let nozodData = null;
+    let localNozodes = [];
     let audioCtx = null;
     let activeOscillators = [];
     let activeDelays = [];
     let activeMasterGain = null;
     let activeMerger = null;
     let currentlyPlayingBtn = null;
+    let currentSearch = '';
+    let searchDebounceTimer = null;
 
     /* ---------- Утилиты ---------- */
 
@@ -26,6 +55,11 @@
         return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[c]));
+    }
+
+    // Удаляет управляющие символы (C0 + DEL) — защита от внедрения в HTML/атрибуты.
+    function stripControl(s) {
+        return String(s == null ? '' : s).replace(/[\u0000-\u001F\u007F]/g, ' ');
     }
 
     function getFreqsString(r) {
@@ -38,7 +72,7 @@
         return String(str)
             .split(/[;,]/)
             .map(s => parseFloat(s.replace(',', '.').trim()))
-            .filter(n => !isNaN(n) && n > 0);
+            .filter(n => !isNaN(n) && isFinite(n) && n > 0);
     }
 
     function sanitizeFileName(s) {
@@ -88,44 +122,165 @@
         }
     }
 
-    /* ---------- Загрузка и рендер ---------- */
+    /* ============================================================
+       ЛОКАЛЬНЫЕ (ПОЛЬЗОВАТЕЛЬСКИЕ) НОЗОДЫ
+       ============================================================ */
+
+    /**
+     * Нормализует и валидирует запись нозода.
+     * Возвращает безопасный объект или null, если запись невалидна.
+     */
+    function normalizeUserNozode(obj) {
+        if (!obj || typeof obj !== 'object') return null;
+
+        // Имя: обрезаем, чистим, добавляем суффикс _Locale
+        let name = stripControl(obj.name).trim().replace(/\s+/g, ' ');
+        if (!name) return null;
+        if (name.length > MAX_NAME_LEN) name = name.slice(0, MAX_NAME_LEN);
+        if (!name.endsWith(LOCALE_SUFFIX)) name += LOCALE_SUFFIX;
+
+        // Частоты: только положительные конечные числа
+        let freqs = [];
+        if (Array.isArray(obj.frequencies)) {
+            freqs = obj.frequencies
+                .map(v => parseFloat(v))
+                .filter(n => isFinite(n) && n > 0);
+        } else if (typeof obj.frequencies === 'string') {
+            freqs = obj.frequencies.split(/[;,]/)
+                .map(s => parseFloat(String(s).replace(',', '.').trim()))
+                .filter(n => isFinite(n) && n > 0);
+        }
+        freqs = freqs.slice(0, MAX_FREQS);
+
+        const description = stripControl(obj.description).slice(0, MAX_TEXT_LEN);
+        const func = stripControl(obj.function).slice(0, MAX_TEXT_LEN);
+        const source = stripControl(obj.source).trim().slice(0, MAX_SOURCE_LEN) || 'CALF';
+        const category = stripControl(obj.category).trim().slice(0, MAX_CATEGORY_LEN) || 'other';
+
+        return {
+            name,
+            frequencies: freqs.join('; '),
+            description,
+            function: func,
+            category,
+            source,
+            _userAdded: true
+        };
+    }
+
+    function isUserNozode(r) {
+        return !!(r && r._userAdded === true);
+    }
+
+    function loadLocalNozodes() {
+        try {
+            const raw = localStorage.getItem(LOCAL_NOZOD_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            if (!Array.isArray(parsed)) return [];
+            return parsed
+                .map(normalizeUserNozode)
+                .filter(Boolean)
+                .slice(0, MAX_LOCAL_NOZODS);
+        } catch (e) {
+            console.warn('[Nozod] Failed to load local nozodes:', e);
+            return [];
+        }
+    }
+
+    function saveLocalNozodes() {
+        try {
+            localStorage.setItem(LOCAL_NOZOD_KEY, JSON.stringify(localNozodes));
+            return true;
+        } catch (e) {
+            console.error('[Nozod] Save failed:', e);
+            showToast('Не удалось сохранить (хранилище переполнено?)', 'danger');
+            return false;
+        }
+    }
+
+    /* ============================================================
+       ЗАГРУЗКА И ОБЪЕДИНЕНИЕ
+       ============================================================ */
 
     async function loadNozodes() {
-        if (nozodData) return;
-        const container = document.getElementById('nozodAccordion');
-        if (container) {
-            container.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Загрузка нозодов…</div>';
-        }
-        try {
-            const res = await fetch(NOZOD_URL, { cache: 'no-cache' });
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            nozodData = await res.json();
-        } catch (e) {
-            console.error('nozod.json load error:', e);
-            if (container) {
-                container.innerHTML = '<div class="alert alert-danger m-2">Не удалось загрузить nozod.json</div>';
+        // Всегда перечитываем локальные — могли поменяться в другой вкладке
+        localNozodes = loadLocalNozodes();
+
+        if (!nozodData) {
+            const container = document.getElementById('nozodAccordion');
+            if (container && !container.querySelector('.nozode-item')) {
+                container.innerHTML = '<div class="text-center p-3"><div class="spinner-border spinner-border-sm"></div> Загрузка нозодов…</div>';
             }
-            return;
+            try {
+                const res = await fetch(NOZOD_URL, { cache: 'no-cache' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                nozodData = (data && typeof data === 'object')
+                    ? data
+                    : { categories: {}, source: 'CALF', remedies: [] };
+            } catch (e) {
+                console.error('[Nozod] nozod.json load error:', e);
+                nozodData = { categories: {}, source: 'CALF', remedies: [] };
+                showToast('Не удалось загрузить nozod.json — показаны только ваши нозоды', 'warning');
+            }
+            if (!nozodData.categories || typeof nozodData.categories !== 'object') {
+                nozodData.categories = {};
+            }
+            if (!Array.isArray(nozodData.remedies)) {
+                nozodData.remedies = [];
+            }
         }
+
+        populateCategorySelect();
         renderAccordion();
     }
+
+    /**
+     * База + локальные. При совпадении имени локальный перекрывает базовый
+     * (по соглашению имён с суффиксом _Locale конфликтов быть не должно).
+     */
+    function getAllRemedies() {
+        const base = Array.isArray(nozodData && nozodData.remedies) ? nozodData.remedies : [];
+        const map = new Map();
+        for (const r of base) {
+            if (r && typeof r.name === 'string') map.set(r.name, r);
+        }
+        for (const r of localNozodes) {
+            if (r && typeof r.name === 'string') map.set(r.name, r);
+        }
+        return Array.from(map.values());
+    }
+
+    function matchesSearch(r, query) {
+        if (!query) return true;
+        const q = query.toLowerCase();
+        return (r.name || '').toLowerCase().includes(q)
+            || (r.description || '').toLowerCase().includes(q)
+            || (r.function || '').toLowerCase().includes(q);
+    }
+
+    /* ============================================================
+       ОТРИСОВКА
+       ============================================================ */
 
     function renderAccordion() {
         const container = document.getElementById('nozodAccordion');
         if (!container) return;
         container.innerHTML = '';
 
-        const remedies = Array.isArray(nozodData.remedies) ? nozodData.remedies : [];
-        const categories = nozodData.categories || {};
+        const remedies = getAllRemedies();
+        const categories = (nozodData && nozodData.categories) || {};
+        const query = currentSearch.trim().toLowerCase();
 
-        // Группировка по классам
+        const filtered = query ? remedies.filter(r => matchesSearch(r, query)) : remedies;
+
         const groups = {};
-        for (const r of remedies) {
+        for (const r of filtered) {
             const cat = r.category || 'other';
             (groups[cat] = groups[cat] || []).push(r);
         }
 
-        // Порядок классов: как в categories, затем прочие
         const orderedCats = [];
         for (const c of Object.keys(categories)) {
             if (groups[c]) orderedCats.push(c);
@@ -134,6 +289,14 @@
             if (!orderedCats.includes(c)) orderedCats.push(c);
         }
 
+        if (!orderedCats.length) {
+            container.innerHTML = query
+                ? '<div class="text-muted p-3">Ничего не найдено.</div>'
+                : '<div class="text-muted p-3">Список пуст.</div>';
+            return;
+        }
+
+        const expandAll = !!query;
         let idx = 0;
         for (const cat of orderedCats) {
             const catLabel = categories[cat] || cat;
@@ -146,13 +309,13 @@
             wrapper.className = 'accordion-item';
             wrapper.innerHTML = `
                 <h2 class="accordion-header" id="heading-${accId}">
-                    <button class="accordion-button collapsed" type="button"
+                    <button class="accordion-button ${expandAll ? '' : 'collapsed'}" type="button"
                             data-bs-toggle="collapse" data-bs-target="#collapse-${accId}"
-                            aria-expanded="false" aria-controls="collapse-${accId}">
+                            aria-expanded="${expandAll ? 'true' : 'false'}" aria-controls="collapse-${accId}">
                         ${escapeHtml(catLabel)} <span class="badge bg-secondary ms-2">${items.length}</span>
                     </button>
                 </h2>
-                <div id="collapse-${accId}" class="accordion-collapse collapse"
+                <div id="collapse-${accId}" class="accordion-collapse collapse ${expandAll ? 'show' : ''}"
                      aria-labelledby="heading-${accId}" data-bs-parent="#nozodAccordion">
                     <div class="accordion-body nozod-body p-3">${itemsHtml}</div>
                 </div>`;
@@ -160,8 +323,9 @@
             idx++;
         }
 
-        if (!orderedCats.length) {
-            container.innerHTML = '<div class="text-muted p-3">Список пуст.</div>';
+        // Если кнопка воспроизведения «потерялась» после перерисовки — глушим звук
+        if (currentlyPlayingBtn && !document.body.contains(currentlyPlayingBtn)) {
+            stopAll();
         }
     }
 
@@ -173,9 +337,23 @@
         const func = r.function || '';
         const source = r.source || '';
         const disabled = hasFreqs ? '' : 'disabled';
+        const isUser = isUserNozode(r);
 
         const sourceBadge = source
             ? `<span class="badge rounded-pill text-bg-info nozod-source-badge ms-2" title="Источник">${escapeHtml(source)}</span>`
+            : '';
+
+        const userBadge = isUser
+            ? `<span class="badge rounded-pill text-bg-success ms-2" title="Добавлено пользователем">Локальный</span>`
+            : '';
+
+        const deleteBtn = isUser
+            ? `<button class="btn btn-sm btn-outline-danger nozod-delete-btn"
+                       title="Удалить (только ваш нозод)"
+                       data-action="delete"
+                       data-name="${escapeHtml(name)}">
+                   <i class="bi bi-trash"></i>
+               </button>`
             : '';
 
         return `
@@ -184,7 +362,7 @@
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div class="flex-grow-1">
                             <div class="fw-bold nozod-name">
-                                ${escapeHtml(name)}${sourceBadge}
+                                ${escapeHtml(name)}${sourceBadge}${userBadge}
                             </div>
                             ${desc ? `<div class="small text-muted mt-1">${escapeHtml(desc)}</div>` : ''}
                             ${freqsStr ? `<div class="small mt-1"><strong>Частоты (Гц):</strong> <span class="font-monospace">${escapeHtml(freqsStr)}</span></div>` : ''}
@@ -206,13 +384,16 @@
                                     ${disabled}>
                                 <i class="bi bi-download"></i>
                             </button>
+                            ${deleteBtn}
                         </div>
                     </div>
                 </div>
             </div>`;
     }
 
-    /* ---------- Воспроизведение (Web Audio API) ---------- */
+    /* ============================================================
+       АУДИО (Web Audio API)
+       ============================================================ */
 
     function ensureAudioCtx() {
         if (!audioCtx) {
@@ -266,26 +447,16 @@
         }
     }
 
-    /**
-     * Стерео-воспроизведение с фазовым сдвигом 90° между каналами.
-     * Для каждой частоты:
-     *   правый канал = sin(ωt)               (напрямую)
-     *   левый  канал = sin(ωt − π/2)         (через DelayNode на T/4)
-     * Итог: правый канал опережает левый на 90°.
-     * Относительный фазовый сдвиг одинаков — ровно 90° на каждой частоте.
-     */
     function playFrequencies(freqs, btn) {
         stopAll();
         if (!freqs.length) return;
         const ctx = ensureAudioCtx();
 
-        // Мастер-гейн (нормируем амплитуду, чтобы не было клиппинга)
         const master = ctx.createGain();
         master.gain.value = 0.5 / freqs.length;
         master.connect(ctx.destination);
         activeMasterGain = master;
 
-        // Мерджер: input 0 → левый канал, input 1 → правый канал
         const merger = ctx.createChannelMerger(CHANNELS);
         merger.connect(master);
         activeMerger = merger;
@@ -295,13 +466,12 @@
             osc.type = 'sine';
             osc.frequency.value = f;
 
-            // Правый канал — прямой сигнал
+            // Правый канал — прямой сигнал sin(ωt)
             osc.connect(merger, 0, 1);
 
             // Левый канал — через задержку T/4 (90°)
             const delayL = ctx.createDelay(1.0);
             const quarterPeriod = 1 / (4 * f);
-            // Минимум — 1 sample, чтобы DelayNode не срезал задержку в 0
             delayL.delayTime.value = Math.max(quarterPeriod, 1 / SAMPLE_RATE);
             osc.connect(delayL);
             delayL.connect(merger, 0, 0);
@@ -315,13 +485,15 @@
         setPlayButtonState(btn, true);
     }
 
-    /* ---------- Генерация WAV (32-bit PCM, stereo, 48 kHz, 90°) ---------- */
+    /* ============================================================
+       ГЕНЕРАЦИЯ WAV (32-bit PCM, stereo, 48 кГц, 90°)
+       ============================================================ */
 
     function generateWavBlob(freqs, durationSec) {
         const numChannels = CHANNELS;
         const bytesPerSample = BITS / 8;
         const blockAlign = numChannels * bytesPerSample;
-        const byteRate = SAMPLE_RATE * blockAlign;   // 48000 * 8 = 384000 Б/с = 3072 кбит/с
+        const byteRate = SAMPLE_RATE * blockAlign;
         const numSamples = Math.max(1, Math.floor(durationSec * SAMPLE_RATE));
         const dataLength = numSamples * numChannels;
         const dataSize = dataLength * bytesPerSample;
@@ -335,20 +507,17 @@
         const writeU16 = v => { view.setUint16(off, v & 0xFFFF, true); off += 2; };
         const writeI32 = v => { view.setInt32(off, v | 0, true); off += 4; };
 
-        // RIFF header
         writeStr('RIFF');
         writeU32(36 + dataSize);
         writeStr('WAVE');
-        // fmt chunk
         writeStr('fmt ');
         writeU32(16);
-        writeU16(1);                // PCM
+        writeU16(1);
         writeU16(numChannels);
         writeU32(SAMPLE_RATE);
         writeU32(byteRate);
         writeU16(blockAlign);
         writeU16(BITS);
-        // data chunk
         writeStr('data');
         writeU32(dataSize);
 
@@ -366,13 +535,12 @@
             let right = 0;
             for (let k = 0; k < freqs.length; k++) {
                 const phase = twoPi * freqs[k] * t;
-                left  += Math.sin(phase - halfPi);        // sin(ωt − π/2)
-                right += Math.sin(phase);                 // sin(ωt)
+                left  += Math.sin(phase - halfPi);
+                right += Math.sin(phase);
             }
             left  *= amp;
             right *= amp;
 
-            // Плавное появление / затухание (общий множитель для обоих каналов)
             if (i < fadeSamples) {
                 const k = i / fadeSamples;
                 left *= k;
@@ -383,7 +551,6 @@
                 right *= k;
             }
 
-            // Мягкий клиппинг
             if (left  >  1) left  =  1; else if (left  < -1) left  = -1;
             if (right >  1) right =  1; else if (right < -1) right = -1;
 
@@ -393,8 +560,6 @@
 
         return new Blob([buffer], { type: 'audio/wav' });
     }
-
-    /* ---------- Скачивание / сохранение файла ---------- */
 
     function downloadBlobFallback(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -407,7 +572,6 @@
         setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
 
-    // Имя файла: name_source.wav (или name.wav, если source пуст)
     function buildFileName(name, source) {
         const safeName = sanitizeFileName(name);
         const safeSource = source ? sanitizeFileName(source) : '';
@@ -436,7 +600,6 @@
 
         const fileName = buildFileName(name, source);
 
-        // --- File System Access API (Chrome / Edge) ---
         let fileHandle = null;
         if (typeof window.showSaveFilePicker === 'function') {
             try {
@@ -457,7 +620,6 @@
             }
         }
 
-        // --- Блокировка кнопки ---
         const originalHtml = btn ? btn.innerHTML : '';
         if (btn) {
             btn.disabled = true;
@@ -465,8 +627,6 @@
         }
 
         showToast(`Генерация WAV (${duration} с, стерео 90°)…`, 'info');
-
-        // Пауза, чтобы UI успел перерисоваться
         await new Promise(r => setTimeout(r, 50));
 
         try {
@@ -477,16 +637,10 @@
                 const writable = await fileHandle.createWritable();
                 await writable.write(blob);
                 await writable.close();
-                showToast(
-                    `Файл сохранён: «${fileHandle.name}» (${sizeMb} МБ) — в выбранную вами папку`,
-                    'success'
-                );
+                showToast(`Файл сохранён: «${fileHandle.name}» (${sizeMb} МБ)`, 'success');
             } else {
                 downloadBlobFallback(blob, fileName);
-                showToast(
-                    `Файл сохранён: «${fileName}» (${sizeMb} МБ) — папка загрузок браузера`,
-                    'success'
-                );
+                showToast(`Файл сохранён: «${fileName}» (${sizeMb} МБ)`, 'success');
             }
         } catch (e) {
             console.error(e);
@@ -499,70 +653,253 @@
         }
     }
 
-    /* ---------- Обработчики кликов ---------- */
+    /* ============================================================
+       ФОРМА ДОБАВЛЕНИЯ / КАТЕГОРИИ
+       ============================================================ */
 
-    document.addEventListener('click', function(e) {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    
-    const action = btn.getAttribute('data-action');
-    const name = btn.getAttribute('data-name') || '';
-    const source = btn.getAttribute('data-source') || '';
-    const rawFreqs = btn.getAttribute('data-freqs') || '';
-    
-    if (action === 'play') {
-        e.preventDefault();
-        
-        if (typeof stopAll === 'function') stopAll();
-        if (!rawFreqs) return;
-        
-        // --- Сохраняем состояние для возврата из визуализатора ---
-        try {
-            // Определяем, в какой категории находится кнопка
-            let categoryTarget = '';
-            const card = btn.closest('.nozode-item');
-            if (card) {
-                const body = card.closest('.accordion-body');
-                if (body) {
-                    const item = body.closest('.accordion-item');
-                    if (item) {
-                        const header = item.querySelector('.accordion-button');
-                        if (header) {
-                            categoryTarget = header.getAttribute('data-bs-target') || '';
+    function populateCategorySelect() {
+        const sel = document.getElementById('nozodCategory');
+        if (!sel) return;
+        const cats = (nozodData && nozodData.categories) || {};
+        const prev = sel.value;
+        sel.innerHTML = '';
+
+        // 'other' всегда первый; остальные — в порядке объявления в JSON
+        const order = ['other', ...Object.keys(cats).filter(k => k !== 'other')];
+        for (const key of order) {
+            const opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = cats[key] || key;
+            sel.appendChild(opt);
+        }
+        sel.value = order.includes(prev) ? prev : 'other';
+    }
+
+    function openAddNozodModal() {
+        const modalEl = document.getElementById('nozodModal');
+        if (!modalEl) return;
+        const nameEl = document.getElementById('nozodName');
+        const freqsEl = document.getElementById('nozodFreqs');
+        const catEl = document.getElementById('nozodCategory');
+        const descEl = document.getElementById('nozodDescription');
+        const funcEl = document.getElementById('nozodFunction');
+        const srcEl = document.getElementById('nozodSource');
+
+        if (nameEl) nameEl.value = '';
+        if (freqsEl) freqsEl.value = '';
+        if (descEl) descEl.value = '';
+        if (funcEl) funcEl.value = '';
+        if (srcEl) srcEl.value = 'CALF';
+
+        populateCategorySelect();
+        if (catEl) catEl.value = 'other';
+
+        const m = (window.bootstrap && window.bootstrap.Modal)
+            ? window.bootstrap.Modal.getOrCreateInstance(modalEl)
+            : null;
+        if (m) m.show();
+        if (nameEl) setTimeout(() => nameEl.focus(), 200);
+    }
+
+    function handleSaveNewNozod() {
+        const nameEl = document.getElementById('nozodName');
+        const freqsEl = document.getElementById('nozodFreqs');
+        const catEl = document.getElementById('nozodCategory');
+        const descEl = document.getElementById('nozodDescription');
+        const funcEl = document.getElementById('nozodFunction');
+        const srcEl = document.getElementById('nozodSource');
+
+        const candidate = normalizeUserNozode({
+            name: nameEl ? nameEl.value : '',
+            frequencies: freqsEl ? freqsEl.value : '',
+            description: descEl ? descEl.value : '',
+            function: funcEl ? funcEl.value : '',
+            category: catEl ? catEl.value : 'other',
+            source: srcEl ? srcEl.value : 'CALF'
+        });
+
+        if (!candidate) {
+            alert('Введите название нозода');
+            if (nameEl) nameEl.focus();
+            return;
+        }
+        if (parseFreqs(candidate.frequencies).length === 0) {
+            alert('Введите хотя бы одну корректную частоту (положительное число)');
+            if (freqsEl) freqsEl.focus();
+            return;
+        }
+
+        // Категория должна существовать в базе — иначе 'other'
+        const cats = (nozodData && nozodData.categories) || {};
+        if (!Object.prototype.hasOwnProperty.call(cats, candidate.category)) {
+            candidate.category = 'other';
+        }
+
+        // Проверка конфликта с базой
+        const baseNames = new Set(
+            ((nozodData && nozodData.remedies) || [])
+                .map(r => (r && r.name) ? String(r.name) : '')
+        );
+        if (baseNames.has(candidate.name)) {
+            alert('Нозод с таким названием уже есть в базе программы. Измените название.');
+            return;
+        }
+
+        const existingIdx = localNozodes.findIndex(r => r.name === candidate.name);
+        if (existingIdx !== -1) {
+            if (!confirm(`Нозод «${candidate.name}» уже существует. Заменить?`)) return;
+            localNozodes[existingIdx] = candidate;
+        } else {
+            if (localNozodes.length >= MAX_LOCAL_NOZODS) {
+                alert(`Достигнут лимит (${MAX_LOCAL_NOZODS}) локальных нозодов. Удалите ненужные.`);
+                return;
+            }
+            localNozodes.push(candidate);
+        }
+
+        if (!saveLocalNozodes()) return;
+
+        // Сброс поиска, чтобы новый нозод был виден
+        currentSearch = '';
+        const searchInput = document.getElementById('nozodSearchInput');
+        if (searchInput) searchInput.value = '';
+
+        renderAccordion();
+
+        const modalEl = document.getElementById('nozodModal');
+        if (modalEl && window.bootstrap && window.bootstrap.Modal) {
+            const m = window.bootstrap.Modal.getInstance(modalEl);
+            if (m) m.hide();
+        }
+
+        showToast('Нозод сохранён', 'success');
+    }
+
+    function handleDeleteNozod(name) {
+        if (!name) return;
+        const idx = localNozodes.findIndex(r => r.name === name);
+        if (idx === -1) {
+            showToast('Этот нозод нельзя удалить (база программы)', 'warning');
+            return;
+        }
+        if (!confirm(`Удалить нозод «${name}»?\nОн будет удалён из локального хранилища.`)) return;
+        localNozodes.splice(idx, 1);
+        if (saveLocalNozodes()) {
+            renderAccordion();
+            showToast('Нозод удалён', 'success');
+        }
+    }
+
+    /* ============================================================
+       ОБРАБОТЧИКИ
+       ============================================================ */
+
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        const action = btn.getAttribute('data-action');
+        const name = btn.getAttribute('data-name') || '';
+        const source = btn.getAttribute('data-source') || '';
+        const rawFreqs = btn.getAttribute('data-freqs') || '';
+
+        if (action === 'play') {
+            e.preventDefault();
+            if (typeof stopAll === 'function') stopAll();
+            if (!rawFreqs) return;
+
+            try {
+                let categoryTarget = '';
+                const card = btn.closest('.nozode-item');
+                if (card) {
+                    const body = card.closest('.accordion-body');
+                    if (body) {
+                        const item = body.closest('.accordion-item');
+                        if (item) {
+                            const header = item.querySelector('.accordion-button');
+                            if (header) categoryTarget = header.getAttribute('data-bs-target') || '';
                         }
                     }
                 }
-            }
-            sessionStorage.setItem('atlas_return', JSON.stringify({
-                page: 'nozod',
-                category: categoryTarget,
-                name: name,
-                scrollY: window.scrollY || window.pageYOffset || 0
-            }));
-        } catch (err) { /* ignore */ }
-        
-        // --- Переход в визуализатор (как было раньше) ---
-        const params = new URLSearchParams({
-            freqs: rawFreqs,
-            name: name,
-            autoPlay: '1'
-        });
-        window.location.href = 'LUXE METALLICS.html?' + params.toString();
-        
-    } else if (action === 'save') {
-        e.preventDefault();
-        const freqs = parseFreqs(rawFreqs);
-        saveWav(name, source, freqs, btn);
-    }
-});
+                sessionStorage.setItem('atlas_return', JSON.stringify({
+                    page: 'nozod',
+                    category: categoryTarget,
+                    name: name,
+                    scrollY: window.scrollY || window.pageYOffset || 0
+                }));
+            } catch (err) { /* ignore */ }
 
-    // Esc в любом месте приложения — глушим звук
+            const params = new URLSearchParams({
+                freqs: rawFreqs,
+                name: name,
+                autoPlay: '1'
+            });
+            window.location.href = 'LUXE METALLICS.html?' + params.toString();
+
+        } else if (action === 'save') {
+            e.preventDefault();
+            const freqs = parseFreqs(rawFreqs);
+            saveWav(name, source, freqs, btn);
+
+        } else if (action === 'delete') {
+            e.preventDefault();
+            handleDeleteNozod(name);
+        }
+    });
+
     document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape') stopAll();
     });
 
+    /* ---------- Инициализация UI ---------- */
+
+    function initUI() {
+        const addBtn = document.getElementById('btn-add-nozod');
+        if (addBtn) addBtn.addEventListener('click', openAddNozodModal);
+
+        const saveBtn = document.getElementById('saveNozodBtn');
+        if (saveBtn) saveBtn.addEventListener('click', handleSaveNewNozod);
+
+        const searchInput = document.getElementById('nozodSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                currentSearch = String(e.target.value || '');
+                clearTimeout(searchDebounceTimer);
+                searchDebounceTimer = setTimeout(() => {
+                    if (nozodData) renderAccordion();
+                }, 180);
+            });
+        }
+
+        // Enter в полях формы = сохранение
+        ['nozodName', 'nozodFreqs', 'nozodSource'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveNewNozod();
+                    }
+                });
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initUI);
+    } else {
+        initUI();
+    }
+
+    /* ---------- Публичный API (совместимость с app.js) ---------- */
+
     window.Nozod = {
         stopAll: stopAll,
-        load: loadNozodes
+        load: loadNozodes,
+        // Перечитать локальные данные без перезагрузки base (на случай cross-tab)
+        reloadLocal: () => {
+            localNozodes = loadLocalNozodes();
+            renderAccordion();
+        }
     };
 })();

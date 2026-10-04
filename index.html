@@ -378,11 +378,31 @@
 </div>
 
         <!-- Страница Нозод -->
-        <div id="nozodPage" style="display: none;">
+        <!-- Страница Нозод -->
+<div id="nozodPage" style="display: none;">
     <h1 class="page-title">Нозоды</h1>
     <p class="small-text text-muted">
         Частоты воспроизводятся одновременно. Сохранение — WAV, стерео 48000 Гц, 32 бит, 3072 кбит/с.
     </p>
+
+    <!-- Поиск + добавление -->
+    <div class="d-flex gap-2 mb-3">
+        <input type="search"
+               class="form-control form-control-sm"
+               id="nozodSearchInput"
+               placeholder="Поиск по названию, описанию или функции…"
+               autocomplete="off"
+               autocorrect="off"
+               autocapitalize="off"
+               spellcheck="false"
+               maxlength="120">
+        <button class="btn btn-sm btn-outline-success flex-shrink-0"
+                id="btn-add-nozod"
+                title="Добавить нозод">
+            <i class="bi bi-plus-circle"></i> Нозод
+        </button>
+    </div>
+
     <div class="accordion accordion-scroll mb-4" id="nozodAccordion"></div>
 </div>
 
@@ -458,6 +478,57 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Модальное окно добавления нозода -->
+<div class="modal fade" id="nozodModal" tabindex="-1" aria-labelledby="nozodModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nozodModalLabel">Добавить нозод</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="nozodForm" autocomplete="off" onsubmit="return false;">
+                    <div class="mb-2">
+                        <label class="form-label">Название <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="nozodName" maxlength="120" required>
+                        <small class="text-muted">Суффикс <code>_Locale</code> добавляется автоматически.</small>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Частоты, Гц <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="nozodFreqs" placeholder="100; 200; 300" maxlength="512" required>
+                        <small class="text-muted">Положительные числа через <code>;</code> или <code>,</code>.</small>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Категория</label>
+                        <select class="form-select form-select-sm" id="nozodCategory"></select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control form-control-sm"
+                                  id="nozodDescription" rows="2" maxlength="2000"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Функция</label>
+                        <textarea class="form-control form-control-sm"
+                                  id="nozodFunction" rows="2" maxlength="2000"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Источник</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="nozodSource" value="CALF" maxlength="60">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-sm btn-primary" id="saveNozodBtn">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
     </main>
 
     <footer class="footer mt-auto py-1">

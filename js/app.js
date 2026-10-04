@@ -894,35 +894,51 @@ function openAddModal() {
 document.getElementById('btn-add-point')?.addEventListener('click', openAddModal);
 
 document.getElementById('savePointBtn')?.addEventListener('click', () => {
-    const pathologyInput = document.getElementById('pointPathology')?.value.trim();
-    const pointName = document.getElementById('pointName')?.value.trim();
+    const pathologyInputRaw = document.getElementById('pointPathology')?.value.trim();
+    let pointNameRaw = document.getElementById('pointName')?.value.trim();
     const dispersion = document.getElementById('pointDispersion')?.value.trim();
     const description = document.getElementById('pointDescription')?.value.trim();
     const imagesInput = document.getElementById('pointImages')?.value.trim();
     const editPathologyEl = document.getElementById('editPathology');
     const editIndexEl = document.getElementById('editIndex');
-
-    console.log('[savePointBtn] Сохраняем точку:');
-    console.log('  Патология:', JSON.stringify(pathologyInput));
-    console.log('  Название точки:', JSON.stringify(pointName));
-    console.log('  Расположение:', JSON.stringify(dispersion));
-
-    if (!pathologyInput || !pointName || !dispersion) {
+    
+    if (!pathologyInputRaw || !pointNameRaw || !dispersion) {
         alert('Заполните обязательные поля');
         return;
     }
-
+    
+    const editPathologyName = editPathologyEl?.value;
+    const editIdx = parseInt(editIndexEl?.value);
+    const isEditing = editPathologyName && !isNaN(editIdx) && editIdx >= 0;
+    
+    const LOCALE_SUFFIX = '_Locale';
+    
+    // === Приставка _Locale для НОВОЙ точки ===
+    // Если это не редактирование и имя ещё не содержит суффикс — добавляем.
+    // Так пользовательская точка никогда не совпадёт по имени с базовой
+    // из point.json, и merge в loadData() её не перезапишет.
+    let pointName = pointNameRaw;
+    if (!isEditing && !pointName.endsWith(LOCALE_SUFFIX)) {
+        pointName = pointName + LOCALE_SUFFIX;
+    }
+    
+    // === Приставка _Locale для НОВОЙ патологии ===
+    // Патология считается «новой», если её нет в текущем pathologiesData.
+    // (Т.е. она не пришла из point.json и не была создана ранее.)
+    let pathologyInput = pathologyInputRaw;
+    const existingPathology = pathologiesData.find(p => p.name === pathologyInputRaw);
+    if (!existingPathology && !pathologyInput.endsWith(LOCALE_SUFFIX)) {
+        pathologyInput = pathologyInput + LOCALE_SUFFIX;
+    }
+    
     let images = [];
     if (imagesInput) {
         images = imagesInput.split(',').map(s => s.trim()).filter(s => s);
     }
-
+    
     const newPoint = { name: pointName, dispersion, description, images };
-
-    const editPathologyName = editPathologyEl?.value;
-    const editIdx = parseInt(editIndexEl?.value);
-
-    if (editPathologyName && !isNaN(editIdx) && editIdx >= 0) {
+    
+    if (isEditing) {
         const oldPathology = pathologiesData.find(p => p.name === editPathologyName);
         if (oldPathology) {
             if (oldPathology.name === pathologyInput) {
@@ -933,7 +949,6 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
                 if (!newPathology) {
                     newPathology = { name: pathologyInput, links: [], point: [] };
                     pathologiesData.push(newPathology);
-                    console.log('[savePointBtn] Создана новая патология:', pathologyInput);
                 }
                 newPathology.point.push(newPoint);
             }
@@ -943,16 +958,11 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
         if (!pathology) {
             pathology = { name: pathologyInput, links: [], point: [] };
             pathologiesData.push(pathology);
-            console.log('[savePointBtn] Создана новая патология:', pathologyInput);
-        } else {
-            console.log('[savePointBtn] Найдена существующая патология:', pathology.name);
         }
         pathology.point.push(newPoint);
     }
-
-    pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-    console.log('[savePointBtn] Все патологии после сохранения:', pathologiesData.map(p => p.name));
     
+    pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
     afterDataChange();
     pointModal.hide();
 });
@@ -988,54 +998,99 @@ function areImagesEqual(images1, images2) {
 // ========== ЕКСПОРТ ==========
 document.getElementById('btn-export-csv')?.addEventListener('click', () => {
     try {
-        let totalPoints = 0;
-        pathologiesData.forEach(pathology => {
-            totalPoints += pathology.point.length;
-        });
-        
-        if (totalPoints === 0) {
-            showToast('Немає даних для експорту');
-            return;
-        }
-        
-        const rows = [
-            ['Патология', 'Название точки', 'Расположение', 'Описание', 'Ссылки на фото']
-        ];
-        
-        const escapeCSV = (str) => {
-            if (str === undefined || str === null) return '';
-            const string = String(str);
-            if (string.includes(',') || string.includes('"') || string.includes('\n') || string.includes('\r')) {
-                return '"' + string.replace(/"/g, '""') + '"';
-            }
-            return string;
-        };
-        
+        const LOCALE_SUFFIX = '_Locale';
+        const isLocaleEntry = (name) =>
+            typeof name === 'string' && name.endsWith(LOCALE_SUFFIX);
+
+        // --- Точки пользователя ---
+        const userPoints = [];
         pathologiesData.forEach(pathology => {
             pathology.point.forEach(point => {
-                let images = '';
-                if (point.images && Array.isArray(point.images)) {
-                    const validImages = point.images.filter(img => isValidImageUrl(img));
-                    images = validImages.join(';');
+                if (isLocaleEntry(point.name)) {
+                    userPoints.push({ pathology: pathology.name, point });
                 }
-                
-                rows.push([
-                    escapeCSV(pathology.name),
-                    escapeCSV(point.name),
-                    escapeCSV(point.dispersion),
-                    escapeCSV(point.description || ''),
-                    escapeCSV(images)
-                ]);
             });
         });
-        
+
+        // --- Нозоды пользователя ---
+        let userNozodes = [];
+        try {
+            const raw = localStorage.getItem('atlas_ledneva_user_nozodes');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    userNozodes = parsed.filter(r => r && isLocaleEntry(r.name));
+                }
+            }
+        } catch (e) { console.warn('Не удалось прочитать пользовательские нозоды:', e); }
+
+        if (userPoints.length === 0 && userNozodes.length === 0) {
+    alert(
+        'Нет созданных вами записей о точках или нозодах.\n\n' +
+        'Экспортируются только созданные вами записи — чтобы ими ' +
+        'можно было поделиться или перенести на другое устройство.\n\n' +
+        'Базовые точки и нозоды уже вшиты в программу и в экспорт не попадают.'
+    );
+    return;
+}
+
+        const escapeCSV = (str) => {
+            if (str === undefined || str === null) return '';
+            const s = String(str);
+            if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')) {
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+            return s;
+        };
+
+        const rows = [[
+            'Тип','Патология','Название','Расположение','Описание','Фото',
+            'Частоты','Функция','Категория','Источник'
+        ]];
+
+        // Точки
+        userPoints.forEach(({ pathology, point }) => {
+            let images = '';
+            if (Array.isArray(point.images)) {
+                images = point.images.filter(img => isValidImageUrl(img)).join(';');
+            }
+            rows.push([
+                'Точка',
+                escapeCSV(pathology),
+                escapeCSV(point.name),
+                escapeCSV(point.dispersion),
+                escapeCSV(point.description || ''),
+                escapeCSV(images),
+                '', '', '', ''
+            ]);
+        });
+
+        // Нозоды
+        userNozodes.forEach(n => {
+            const freqs = Array.isArray(n.frequencies)
+                ? n.frequencies.join(';')
+                : String(n.frequencies || '');
+            rows.push([
+                'Нозод',
+                '',
+                escapeCSV(n.name),
+                '',
+                escapeCSV(n.description || ''),
+                '',
+                escapeCSV(freqs),
+                escapeCSV(n.function || ''),
+                escapeCSV(n.category || 'other'),
+                escapeCSV(n.source || 'CALF')
+            ]);
+        });
+
         const csvContent = rows.map(row => row.join(',')).join('\n');
         const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        
+
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 19).replace(/:/g, '-').replace('T', '_');
         const fileName = `atlasLed_${appStorage.appName}_${dateStr}.csv`;
-        
+
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = fileName;
@@ -1043,15 +1098,13 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
-        
-        showToast(`Експортовано ${totalPoints} точок з ${pathologiesData.length} патологій`);
-        
+
+        showToast(`Экспортировано: ${userPoints.length} точек, ${userNozodes.length} нозодов`);
     } catch (error) {
-        console.error('Помилка експорту:', error);
-        alert('Помилка при експорті даних');
+        console.error('Ошибка экспорта:', error);
+        alert('Ошибка при экспорте данных');
     }
 });
-
 // ========== ІМПОРТ ==========
 document.getElementById('btn-import-csv')?.addEventListener('click', () => {
     document.getElementById('import-file')?.click();
