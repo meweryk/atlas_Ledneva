@@ -6,7 +6,7 @@
 //  - Предзагрузка всех фото из pictures/ через point.json
 // =============================================================
 
-const CACHE_VERSION = 'v5.06';
+const CACHE_VERSION = 'v5.07';
 const STATIC_CACHE_NAME = `atlas-static-${CACHE_VERSION}`;
 const IMAGES_CACHE_NAME = `atlas-images-${CACHE_VERSION}`;
 const DATA_CACHE_NAME = `atlas-data-${CACHE_VERSION}`;
@@ -26,6 +26,7 @@ const STATIC_URLS = [
     
     // JS / CSS приложения
     './css/style.css',
+    './js/atlas-ui.js', 
     './js/app.js',
     './js/star.js',
     './js/nozod.js',
