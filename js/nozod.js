@@ -82,6 +82,14 @@
             .slice(0, 80) || 'nozod';
     }
 
+    // Универсальный confirm: кастомная модалка из index.html, иначе нативный.
+    function showConfirm(message) {
+        if (typeof window.atlasConfirm === 'function') {
+            return window.atlasConfirm(message);
+        }
+        return Promise.resolve(window.confirm(message));
+    }
+
     /* ---------- Toast-уведомления ---------- */
 
     function ensureToastContainer() {
@@ -701,7 +709,8 @@
         if (nameEl) setTimeout(() => nameEl.focus(), 200);
     }
 
-    function handleSaveNewNozod() {
+    // === ИЗМЕНЕНО: стало async + await showConfirm ===
+    async function handleSaveNewNozod() {
         const nameEl = document.getElementById('nozodName');
         const freqsEl = document.getElementById('nozodFreqs');
         const catEl = document.getElementById('nozodCategory');
@@ -747,7 +756,9 @@
 
         const existingIdx = localNozodes.findIndex(r => r.name === candidate.name);
         if (existingIdx !== -1) {
-            if (!confirm(`Нозод «${candidate.name}» уже существует. Заменить?`)) return;
+            // === ИЗМЕНЕНО: await showConfirm ===
+            const replace = await showConfirm(`Нозод «${candidate.name}» уже существует. Заменить?`);
+            if (!replace) return;
             localNozodes[existingIdx] = candidate;
         } else {
             if (localNozodes.length >= MAX_LOCAL_NOZODS) {
@@ -775,14 +786,18 @@
         showToast('Нозод сохранён', 'success');
     }
 
-    function handleDeleteNozod(name) {
+    // === ИЗМЕНЕНО: стало async + await showConfirm ===
+    async function handleDeleteNozod(name) {
         if (!name) return;
         const idx = localNozodes.findIndex(r => r.name === name);
         if (idx === -1) {
             showToast('Этот нозод нельзя удалить (база программы)', 'warning');
             return;
         }
-        if (!confirm(`Удалить нозод «${name}»?\nОн будет удалён из локального хранилища.`)) return;
+        const ok = await showConfirm(
+            `Удалить нозод «${name}»?\nОн будет удалён из локального хранилища.`
+        );
+        if (!ok) return;
         localNozodes.splice(idx, 1);
         if (saveLocalNozodes()) {
             renderAccordion();

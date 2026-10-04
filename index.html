@@ -10,6 +10,162 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="./pictures/icon-192.png">
     <meta name="theme-color" content="#f5f0e6">
+    <script>
+    (function () {
+        'use strict';
+        if (window.__atlasAlertInstalled) return;
+        window.__atlasAlertInstalled = true;
+
+        let overlay = null;
+        let closeCallback = null;
+
+        function ensureOverlay() {
+            if (overlay) return overlay;
+
+            overlay = document.createElement('div');
+            overlay.id = 'atlasAlertOverlay';
+            overlay.style.cssText = [
+                'position:fixed', 'inset:0', 'z-index:10000',
+                'display:none', 'align-items:center', 'justify-content:center',
+                'background:rgba(0,0,0,0.5)', 'padding:16px'
+            ].join(';');
+
+            const dialog = document.createElement('div');
+            dialog.setAttribute('role', 'dialog');
+            dialog.setAttribute('aria-modal', 'true');
+            dialog.setAttribute('aria-labelledby', 'atlasAlertTitle');
+            dialog.style.cssText = [
+                'background:#fff', 'border-radius:12px', 'max-width:420px',
+                'width:100%', 'box-shadow:0 10px 30px rgba(0,0,0,0.35)',
+                'overflow:hidden', 'max-height:80vh',
+                'display:flex', 'flex-direction:column'
+            ].join(';');
+
+            const header = document.createElement('div');
+            header.id = 'atlasAlertTitle';
+            header.textContent = 'Атлас';
+            header.style.cssText = [
+                'padding:14px 18px', 'background:#2d5a2d', 'color:#fff',
+                'font-weight:600', 'font-size:1.05rem'
+            ].join(';');
+
+            const body = document.createElement('div');
+            body.id = 'atlasAlertBody';
+            body.style.cssText = [
+                'padding:16px 18px', 'white-space:pre-wrap',
+                'font-size:0.95rem', 'line-height:1.45',
+                'overflow-y:auto', 'color:#222'
+            ].join(';');
+
+            const footer = document.createElement('div');
+            footer.id = 'atlasAlertFooter';
+            footer.style.cssText = 'padding:10px 18px 14px;text-align:right;';
+
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(footer);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+
+            // Клик по фону = закрыть (поведение контролирует closeCallback)
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay && typeof closeCallback === 'function') {
+                    closeCallback();
+                }
+            });
+            // Esc = закрыть
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && overlay.style.display === 'flex'
+                    && typeof closeCallback === 'function') {
+                    closeCallback();
+                }
+            });
+
+            return overlay;
+        }
+
+        function hideOverlay() {
+            if (overlay) overlay.style.display = 'none';
+            closeCallback = null;
+        }
+
+        function makeButton(label, primary) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = label;
+            btn.style.cssText = primary
+                ? [
+                    'background:#2d5a2d', 'color:#fff', 'border:none',
+                    'padding:8px 22px', 'border-radius:8px',
+                    'font-size:0.95rem', 'cursor:pointer', 'margin-left:8px'
+                  ].join(';')
+                : [
+                    'background:#eee', 'color:#222', 'border:none',
+                    'padding:8px 18px', 'border-radius:8px',
+                    'font-size:0.95rem', 'cursor:pointer'
+                  ].join(';');
+            return btn;
+        }
+
+        // -------- atlasAlert: замена системного alert --------
+        window.atlasAlert = function (message) {
+            const el = ensureOverlay();
+            el.querySelector('#atlasAlertTitle').textContent = 'Атлас';
+            el.querySelector('#atlasAlertBody').textContent = String(message == null ? '' : message);
+
+            const footer = el.querySelector('#atlasAlertFooter');
+            footer.innerHTML = '';
+            const okBtn = makeButton('OK', true);
+            okBtn.addEventListener('click', hideOverlay);
+            footer.appendChild(okBtn);
+
+            closeCallback = hideOverlay;
+            el.style.display = 'flex';
+            setTimeout(() => okBtn.focus(), 50);
+        };
+
+        // -------- atlasConfirm: асинхронный аналог confirm --------
+        // Возвращает Promise<boolean>. Требует await в местах вызова.
+        window.atlasConfirm = function (message) {
+            return new Promise((resolve) => {
+                const el = ensureOverlay();
+                el.querySelector('#atlasAlertTitle').textContent = 'Атлас';
+                el.querySelector('#atlasAlertBody').textContent = String(message == null ? '' : message);
+
+                const footer = el.querySelector('#atlasAlertFooter');
+                footer.innerHTML = '';
+
+                const cancelBtn = makeButton('Отмена', false);
+                const okBtn = makeButton('OK', true);
+                footer.appendChild(cancelBtn);
+                footer.appendChild(okBtn);
+
+                let settled = false;
+                const finish = (result) => {
+                    if (settled) return;
+                    settled = true;
+                    hideOverlay();
+                    resolve(result);
+                };
+
+                okBtn.addEventListener('click', () => finish(true));
+                cancelBtn.addEventListener('click', () => finish(false));
+                closeCallback = () => finish(false);
+
+                el.style.display = 'flex';
+                setTimeout(() => cancelBtn.focus(), 50);
+            });
+        };
+
+        // Переопределяем нативный alert. confirm НЕ переопределяем напрямую —
+        // код должен явно вызывать window.atlasConfirm() с await.
+        try {
+            window.alert = window.atlasAlert;
+        } catch (e) {
+            console.warn('Не удалось переопределить alert:', e);
+        }
+    })();
+    </script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg sticky-top">
@@ -28,7 +184,7 @@
                     </button>
                 </div>
             </div>
-            
+
             <!-- Гамбургер и меню -->
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -65,7 +221,7 @@
             </div>
             <div class="accordion accordion-scroll mb-4" id="pathologyAccordion"></div>
         </div>
-        
+
         <!-- Страница истории -->
         <div id="historyPage" style="display: none;">
             <h1 class="page-title">История записей</h1>
@@ -118,7 +274,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Страница "О программе" -->
         <div id="aboutPage" style="display: none;">
     <h1 class="page-title">О программе</h1>
@@ -130,7 +286,7 @@
                     <i class="bi bi-youtube"></i> Смотреть видео-инструкцию
                 </a>
             </div>
-            
+
             <h3>Атлас Леднёва — электроакупунктура, звук и свет</h3>
             <p><strong>Версия:</strong> <span id="appVersion">загрузка...</span></p>
             <p><strong>Автор:</strong> meweryk (разработка и методика)<br>
@@ -322,12 +478,12 @@
                         <li><strong>Микротоковая терапия</strong> «нормализует» этот потенциал, что помогает клетке «включить» процессы регенерации.</li>
                         <li><strong>Нейрофизиология:</strong> воздействие на БАТ (биологически активные точки) влияет на передачу нервных импульсов, что может снижать болевой синдром и модулировать работу вегетативной нервной системы.</li>
                     </ul>
-                    
+
                     <p>Связь между физиологическим состоянием тканей и их электрическими характеристиками — это фундамент, на котором строится современная электродиагностика и электротерапия.</p>
                     <p>Когда мы говорим о БАТ (биологически активных точках), важно понимать, что с точки зрения физики — это участки кожи с <strong>пониженным электрическим сопротивлением</strong> и повышенной электропроводностью по сравнению с окружающими тканями.</p>
-                    
+
                     <p>Сопротивление БАТ является индикатором состояния ткани. Специалисты используют приборы не только для подачи тока, но и для мониторинга: если при прохождении микротоков сопротивление в точке начинает стабильно меняться (выравниваться), это часто интерпретируется как признак начала регенеративных процессов.</p>
-                    
+
                     <h5>Как физиологические изменения сказываются на проводимости</h5>
                     <ol>
                         <li>
@@ -378,33 +534,32 @@
 </div>
 
         <!-- Страница Нозод -->
-        <!-- Страница Нозод -->
-<div id="nozodPage" style="display: none;">
-    <h1 class="page-title">Нозоды</h1>
-    <p class="small-text text-muted">
-        Частоты воспроизводятся одновременно. Сохранение — WAV, стерео 48000 Гц, 32 бит, 3072 кбит/с.
-    </p>
+        <div id="nozodPage" style="display: none;">
+            <h1 class="page-title">Нозоды</h1>
+            <p class="small-text text-muted">
+                Частоты воспроизводятся одновременно. Сохранение — WAV, стерео 48000 Гц, 32 бит, 3072 кбит/с.
+            </p>
 
-    <!-- Поиск + добавление -->
-    <div class="d-flex gap-2 mb-3">
-        <input type="search"
-               class="form-control form-control-sm"
-               id="nozodSearchInput"
-               placeholder="Поиск по названию, описанию или функции…"
-               autocomplete="off"
-               autocorrect="off"
-               autocapitalize="off"
-               spellcheck="false"
-               maxlength="120">
-        <button class="btn btn-sm btn-outline-success flex-shrink-0"
-                id="btn-add-nozod"
-                title="Добавить нозод">
-            <i class="bi bi-plus-circle"></i> Нозод
-        </button>
-    </div>
+            <!-- Поиск + добавление -->
+            <div class="d-flex gap-2 mb-3">
+                <input type="search"
+                       class="form-control form-control-sm"
+                       id="nozodSearchInput"
+                       placeholder="Поиск по названию, описанию или функции…"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false"
+                       maxlength="120">
+                <button class="btn btn-sm btn-outline-success flex-shrink-0"
+                        id="btn-add-nozod"
+                        title="Добавить нозод">
+                    <i class="bi bi-plus-circle"></i> Нозод
+                </button>
+            </div>
 
-    <div class="accordion accordion-scroll mb-4" id="nozodAccordion"></div>
-</div>
+            <div class="accordion accordion-scroll mb-4" id="nozodAccordion"></div>
+        </div>
 
         <!-- Модальные окна -->
         <div class="modal fade" id="pointModal" tabindex="-1" aria-labelledby="pointModalLabel" aria-hidden="true">
@@ -478,57 +633,57 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- Модальное окно добавления нозода -->
-<div class="modal fade" id="nozodModal" tabindex="-1" aria-labelledby="nozodModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="nozodModalLabel">Добавить нозод</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="nozodForm" autocomplete="off" onsubmit="return false;">
-                    <div class="mb-2">
-                        <label class="form-label">Название <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm"
-                               id="nozodName" maxlength="120" required>
-                        <small class="text-muted">Суффикс <code>_Locale</code> добавляется автоматически.</small>
+        <div class="modal fade" id="nozodModal" tabindex="-1" aria-labelledby="nozodModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="nozodModalLabel">Добавить нозод</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Частоты, Гц <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control form-control-sm"
-                               id="nozodFreqs" placeholder="100; 200; 300" maxlength="512" required>
-                        <small class="text-muted">Положительные числа через <code>;</code> или <code>,</code>.</small>
+                    <div class="modal-body">
+                        <form id="nozodForm" autocomplete="off" onsubmit="return false;">
+                            <div class="mb-2">
+                                <label class="form-label">Название <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm"
+                                       id="nozodName" maxlength="120" required>
+                                <small class="text-muted">Суффикс <code>_Locale</code> добавляется автоматически.</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Частоты, Гц <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm"
+                                       id="nozodFreqs" placeholder="100; 200; 300" maxlength="512" required>
+                                <small class="text-muted">Положительные числа через <code>;</code> или <code>,</code>.</small>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Категория</label>
+                                <select class="form-select form-select-sm" id="nozodCategory"></select>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Описание</label>
+                                <textarea class="form-control form-control-sm"
+                                          id="nozodDescription" rows="2" maxlength="2000"></textarea>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Функция</label>
+                                <textarea class="form-control form-control-sm"
+                                          id="nozodFunction" rows="2" maxlength="2000"></textarea>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Источник</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       id="nozodSource" value="CALF" maxlength="60">
+                            </div>
+                        </form>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Категория</label>
-                        <select class="form-select form-select-sm" id="nozodCategory"></select>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="saveNozodBtn">Сохранить</button>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Описание</label>
-                        <textarea class="form-control form-control-sm"
-                                  id="nozodDescription" rows="2" maxlength="2000"></textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Функция</label>
-                        <textarea class="form-control form-control-sm"
-                                  id="nozodFunction" rows="2" maxlength="2000"></textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label">Источник</label>
-                        <input type="text" class="form-control form-control-sm"
-                               id="nozodSource" value="CALF" maxlength="60">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Отмена</button>
-                <button type="button" class="btn btn-sm btn-primary" id="saveNozodBtn">Сохранить</button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
     </main>
 
     <footer class="footer mt-auto py-1">
@@ -544,15 +699,15 @@
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             const basePath = window.location.pathname.replace(/\/[^/]*$/, '');
-            
+
             navigator.serviceWorker.register(`${basePath}/service-worker.js`, {
                 scope: `${basePath}/`
             }).then(reg => {
                 console.log('SW registered:', reg);
-                
+
                 // Периодическая проверка обновлений
                 setInterval(() => reg.update(), 5 * 60 * 1000);
-                
+
                 // Случай 1: страница открыта, SW нашёл обновление в реальном времени
                 reg.addEventListener('updatefound', () => {
                     const newWorker = reg.installing;
@@ -563,20 +718,21 @@
                         }
                     });
                 });
-                
+
                 // Случай 2: страница открыта ПОСЛЕ того, как SW уже был установлен
-                // (например, пользователь закрыл вкладку во время долгой установки)
                 if (reg.waiting && navigator.serviceWorker.controller) {
                     promptUpdate(reg.waiting);
                 }
             }).catch(err => console.log('SW registration failed:', err));
-            
-            function promptUpdate(worker) {
-                if (confirm('Доступна новая версия приложения. Обновить?')) {
+
+            // === ИЗМЕНЕНО: async + await window.atlasConfirm ===
+            async function promptUpdate(worker) {
+                const ok = await window.atlasConfirm('Доступна новая версия приложения. Обновить?');
+                if (ok) {
                     worker.postMessage({ type: 'SKIP_WAITING' });
                 }
             }
-            
+
             // Перезагрузка один раз после того, как новый SW встал под контроль
             let refreshing = false;
             navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -586,6 +742,6 @@
             });
         });
     }
-</script>
+    </script>
 </body>
 </html>

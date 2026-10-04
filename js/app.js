@@ -5,33 +5,33 @@ class AppStorage {
     this.prefix = `${this.appName}_`;
     console.log('AppStorage ініціалізовано з префіксом:', this.prefix);
   }
-  
+
   getKey(key) {
     return `${this.prefix}${key}`;
   }
-  
+
   getItem(key) {
     return localStorage.getItem(this.getKey(key));
   }
-  
+
   setItem(key, value) {
     localStorage.setItem(this.getKey(key), value);
   }
-  
+
   removeItem(key) {
     localStorage.removeItem(this.getKey(key));
   }
-  
+
   getAllKeys() {
     return Object.keys(localStorage).filter(key => key.startsWith(this.prefix));
   }
-  
+
   migrateIfNeeded() {
     const oldData = localStorage.getItem('atlas_ledneva_data');
     const oldHistory = localStorage.getItem('atlas_history');
     const oldVersion = localStorage.getItem('app_version');
     let migrated = false;
-    
+
     if (oldData && !this.getItem('atlas_data')) {
       this.setItem('atlas_data', oldData);
       console.log('Мігровано atlas_data');
@@ -47,10 +47,10 @@ class AppStorage {
       console.log('Мігровано app_version');
       migrated = true;
     }
-    
+
     return migrated;
   }
-  
+
   loadAtlasData() {
     const stored = this.getItem('atlas_data');
     if (stored) {
@@ -63,11 +63,11 @@ class AppStorage {
     }
     return [];
   }
-  
+
   saveAtlasData(data) {
     this.setItem('atlas_data', JSON.stringify(data));
   }
-  
+
   loadHistory() {
     const stored = this.getItem('atlas_history');
     if (stored) {
@@ -98,7 +98,7 @@ class AppStorage {
     }
     return { users: [], records: [] };
   }
-  
+
   saveHistory(history) {
     this.setItem('atlas_history', JSON.stringify(history));
   }
@@ -116,6 +116,17 @@ let currentEditPathology = null;
 let currentEditIndex = -1;
 let currentPage = 'main';
 let navbarCollapse = document.getElementById('navbarNav');
+
+// ========== УНИВЕРСАЛЬНЫЙ CONFIRM ==========
+// Если в index.html объявлен window.atlasConfirm (кастомная модалка),
+// используем его. Иначе — откат на нативный confirm, чтобы ничего
+// не сломалось, если inline-скрипт отсутствует.
+function showConfirm(message) {
+    if (typeof window.atlasConfirm === 'function') {
+        return window.atlasConfirm(message);
+    }
+    return Promise.resolve(window.confirm(message));
+}
 
 // ========== РОБОТА З LOCALSTORAGE ==========
 function saveToLocalStorage() {
@@ -181,30 +192,30 @@ async function loadData() {
     console.log('=== ІНІЦІАЛІЗАЦІЯ АТЛАСУ ===');
     console.log('Префікс додатку:', appStorage.prefix);
     console.log('Ключі додатку в localStorage:', appStorage.getAllKeys());
-    
+
     const migrated = appStorage.migrateIfNeeded();
     if (migrated) {
         console.log('Старі дані мігровано');
     }
-    
+
     let localData = appStorage.loadAtlasData();
     console.log('Завантажено локальних даних:', localData.length, 'патологій');
-    
+
     let jsonData = [];
     let updatedDescriptionsCount = 0;
-    
+
     const swVersion = await getVersionFromSW();
     const currentVersion = swVersion || APP_VERSION;
     const savedVersion = appStorage.getItem('app_version');
     console.log('Отримано версію з Service Worker:', currentVersion);
     console.log('Збережена версія:', savedVersion);
-    
+
     let needUpdate = (savedVersion !== currentVersion);
-    
+
     if (needUpdate) {
         console.log('Оновлення версії, завантаження point.json...');
     }
-    
+
     try {
         const response = await fetch('point.json', { cache: needUpdate ? 'no-cache' : 'default' });
         jsonData = await response.json();
@@ -212,35 +223,35 @@ async function loadData() {
     } catch (error) {
         console.error('Ошибка загрузки point.json', error);
     }
-    
+
     const normalizeName = (name) => name.split('/')[0].trim().toLowerCase();
-    
+
     const mergedMap = new Map();
     jsonData.forEach(p => mergedMap.set(p.name, p));
-    
+
     localData.forEach(localPathology => {
         if (mergedMap.has(localPathology.name)) {
             const baseP = mergedMap.get(localPathology.name);
-            
+
             localPathology.point.forEach(lp => {
                 const normLocalName = normalizeName(lp.name);
                 const basePoint = baseP.point.find(bp => normalizeName(bp.name) === normLocalName);
-                
+
                 if (basePoint) {
                     const localDesc = (lp.description || "").trim();
                     const baseDesc = (basePoint.description || "").trim();
-                    
+
                     if (localDesc.length < 10 && baseDesc.length >= 10) {
                         console.log(`Обновлено описание для: ${lp.name} (совпало с ${basePoint.name})`);
                         lp.description = baseDesc;
                         updatedDescriptionsCount++;
                     }
-                    
+
                     if (lp.name !== basePoint.name && basePoint.name.includes('/')) {
                         console.log(`Обновлено имя точки: ${lp.name} -> ${basePoint.name}`);
                         lp.name = basePoint.name;
                     }
-                    
+
                     if ((!lp.images || lp.images.length === 0) && basePoint.images) {
                         lp.images = basePoint.images;
                     }
@@ -251,12 +262,12 @@ async function loadData() {
             mergedMap.set(localPathology.name, localPathology);
         }
     });
-    
+
     console.log(`Итог: обновлено ${updatedDescriptionsCount} описаний.`);
-    
+
     pathologiesData = Array.from(mergedMap.values());
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
-    
+
     if (needUpdate) {
         appStorage.setItem('app_version', currentVersion);
         console.log('Оновлено версію додатку:', currentVersion);
@@ -264,14 +275,14 @@ async function loadData() {
             showToast(`Базу даних оновлено: ${updatedDescriptionsCount} описів`);
         }
     }
-    
+
     console.log('=== ПОТОЧНИЙ СТАН ===');
     console.log('Поточна версія:', appStorage.getItem('app_version'));
     console.log('Кількість патологій:', pathologiesData.length);
-    
+
     afterDataChange();
     showPage('main');
-    
+
     // ========== ВОССТАНОВЛЕНИЕ ПОСЛЕ ВОЗВРАТА ИЗ ВИЗУАЛИЗАТОРА ==========
     restoreReturnState();
 }
@@ -288,11 +299,11 @@ function restoreReturnState() {
         sessionStorage.removeItem('atlas_return');
         return;
     }
-    
+
     if (!state || state.page !== 'nozod') return;
-    
+
     showPage('nozod');
-    
+
     let tries = 0;
     const iv = setInterval(() => {
         tries++;
@@ -317,7 +328,7 @@ function revealReturnedNozod(state) {
             col.show();
         }
     }
-    
+
     setTimeout(() => {
         if (state.name) {
             const allNames = document.querySelectorAll('.nozode-item .nozod-name');
@@ -350,17 +361,17 @@ function showPage(page) {
     const aboutPage = document.getElementById('aboutPage');
     const nozodPage = document.getElementById('nozodPage');
     if (!mainPage || !searchPage || !historyPage || !aboutPage) return;
-    
+
     mainPage.style.display = 'none';
     searchPage.style.display = 'none';
     historyPage.style.display = 'none';
     aboutPage.style.display = 'none';
     if (nozodPage) nozodPage.style.display = 'none';
-    
+
     if (page !== 'nozod' && window.Nozod && window.Nozod.stopAll) {
         window.Nozod.stopAll();
     }
-    
+
     if (page === 'main') {
         updateMainPageGreeting();
         mainPage.style.display = 'block';
@@ -402,14 +413,14 @@ function initNavigation() {
         nozod: document.getElementById('nav-nozod'),
         vizar: document.getElementById('nav-vizar')
     };
-    
+
     const collapseNavbar = () => {
         if (navbarCollapse && navbarCollapse.classList.contains('show')) {
             const bsCollapse = new bootstrap.Collapse(navbarCollapse, { toggle: false });
             bsCollapse.hide();
         }
     };
-    
+
     if (navLinks.home) {
         navLinks.home.addEventListener('click', (e) => {
             e.preventDefault();
@@ -466,7 +477,7 @@ function initNavigation() {
             collapseNavbar();
         });
     }
-    
+
     if (navLinks.vizar) {
         navLinks.vizar.addEventListener('click', () => {
             collapseNavbar();
@@ -505,7 +516,7 @@ function renderAccordion() {
     pathologiesData.forEach((pathology, pathIdx) => {
         const itemId = `collapse-${pathIdx}`;
         const headingId = `heading-${pathIdx}`;
-        
+
         const pointsByArea = {};
         pathology.point.forEach((point, pointIdx) => {
             let area = 'другое';
@@ -515,7 +526,7 @@ function renderAccordion() {
             if (!pointsByArea[area]) pointsByArea[area] = [];
             pointsByArea[area].push({ point, pointIdx });
         });
-        
+
         const sortedAreas = Object.keys(pointsByArea).sort();
         let pointsHtml = '';
         sortedAreas.forEach(area => {
@@ -529,15 +540,17 @@ function renderAccordion() {
                 `;
             });
         });
-        
+
         const deleteBtn = document.createElement('i');
         deleteBtn.className = 'bi bi-trash ms-2 delete-pathology';
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.color = '#dc3545';
         deleteBtn.setAttribute('data-pathology-name', pathology.name);
-        deleteBtn.addEventListener('click', (e) => {
+        // === ИЗМЕНЕНО: async + await showConfirm ===
+        deleteBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
-            if (confirm(`Удалить патологию "${pathology.name}" и все её точки?`)) {
+            const ok = await showConfirm(`Удалить патологию "${pathology.name}" и все её точки?`);
+            if (ok) {
                 const index = pathologiesData.findIndex(p => p.name === pathology.name);
                 if (index !== -1) {
                     pathologiesData.splice(index, 1);
@@ -545,7 +558,7 @@ function renderAccordion() {
                 }
             }
         });
-        
+
         const accordionItem = document.createElement('div');
         accordionItem.className = 'accordion-item';
         accordionItem.innerHTML = `
@@ -558,13 +571,13 @@ function renderAccordion() {
                 <div class="accordion-body">${pointsHtml}</div>
             </div>
         `;
-        
+
         const headerButton = accordionItem.querySelector('.accordion-button');
         headerButton.appendChild(deleteBtn);
-        
+
         pathologyAccordion.appendChild(accordionItem);
     });
-    
+
     document.querySelectorAll('.point-name').forEach(el => {
         el.addEventListener('click', (e) => {
             const pathIdx = parseInt(el.dataset.pathIndex);
@@ -574,7 +587,7 @@ function renderAccordion() {
             showPointCard(pathology, point);
         });
     });
-    
+
     document.querySelectorAll('.point-edit').forEach(el => {
         el.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -590,7 +603,7 @@ function renderAccordion() {
 // ========== ЗБЕРЕЖЕННЯ ПОКАЗАНЬ З МОДАЛЬНОГО ВІКНА ==========
 function handleSaveMeasurement(pathology, point, checkBtn) {
     let currentActive = getActiveUser();
-    
+
     if (!currentActive) {
         const name = prompt('Введите ваше имя для добавления в историю:');
         if (!name || name.trim() === '') return;
@@ -602,28 +615,28 @@ function handleSaveMeasurement(pathology, point, checkBtn) {
             return;
         }
     }
-    
+
     const elediyaInput = document.getElementById('modalElediyaInput');
     const folLeftInput = document.getElementById('modalFolLeftInput');
     const folRightInput = document.getElementById('modalFolRightInput');
-    
+
     const elediyaVal = elediyaInput?.value.trim() || '';
     const folLeftVal = folLeftInput?.value.trim() || '';
     const folRightVal = folRightInput?.value.trim() || '';
-    
+
     const hasMeasurements = elediyaVal !== '' || folLeftVal !== '' || folRightVal !== '';
-    
+
     const measurements = {
         elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
         folLeft: folLeftVal !== '' ? parseFloat(folLeftVal) : null,
         folRight: folRightVal !== '' ? parseFloat(folRightVal) : null,
         saved: hasMeasurements
     };
-    
+
     const oneHour = 60 * 60 * 1000;
     const last = getLastRecordTime(point.name, pathology.name, currentActive.id);
     const now = Date.now();
-    
+
     if (last && (now - last) < oneHour) {
         if (hasMeasurements) {
             const history = loadHistory();
@@ -642,13 +655,13 @@ function handleSaveMeasurement(pathology, point, checkBtn) {
         }
         return;
     }
-    
+
     const newRecord = addRecord({
         pointName: point.name,
         pathologyName: pathology.name,
         dispersion: point.dispersion
     });
-    
+
     if (newRecord) {
         if (hasMeasurements) {
             const history = loadHistory();
@@ -664,7 +677,6 @@ function handleSaveMeasurement(pathology, point, checkBtn) {
 }
 
 // ========== КАРТКА ТОЧКИ ==========
-// ========== КАРТКА ТОЧКИ ==========
 function showPointCard(pathology, point) {
     const titleEl = document.getElementById('viewPointTitle');
     const dispEl = document.getElementById('viewDispersion');
@@ -673,7 +685,7 @@ function showPointCard(pathology, point) {
     titleEl.textContent = point.name;
     dispEl.textContent = point.dispersion;
     descEl.textContent = point.description || '—';
-    
+
     let images = [];
     if (point.images && Array.isArray(point.images) && point.images.length > 0) {
         images = point.images;
@@ -682,14 +694,14 @@ function showPointCard(pathology, point) {
     } else if (pathology.links && pathology.links.length > 0) {
         images = pathology.links;
     }
-    
+
     const carouselContainer = document.getElementById('carouselContainer');
     const carouselInner = document.getElementById('carouselInner');
     const prevBtn = document.querySelector('.carousel-control-prev');
     const nextBtn = document.querySelector('.carousel-control-next');
-    
+
     if (!carouselContainer || !carouselInner || !prevBtn || !nextBtn) return;
-    
+
     if (images.length === 0) {
         carouselContainer.style.display = 'none';
     } else {
@@ -702,14 +714,14 @@ function showPointCard(pathology, point) {
             slide.innerHTML = `<img src="${src}" class="d-block w-100" alt="Фото точки">`;
             carouselInner.appendChild(slide);
         });
-        
+
         if (images.length <= 1) {
             prevBtn.style.display = 'none';
             nextBtn.style.display = 'none';
         } else {
             prevBtn.style.display = '';
             nextBtn.style.display = '';
-            
+
             const carousel = document.getElementById('pointCarousel');
             let touchStartX = 0;
             carousel.addEventListener('touchstart', (e) => {
@@ -726,16 +738,16 @@ function showPointCard(pathology, point) {
             }, { passive: true });
         }
     }
-    
+
     // ========== СЕКЦІЯ ПОКАЗАНЬ ПРИБОРІВ У МОДАЛЬНОМУ ВІКНІ ==========
     const oldMeasurementSection = document.getElementById('modalMeasurementSection');
     if (oldMeasurementSection) oldMeasurementSection.remove();
-    
+
     const modalBody = document.querySelector('#viewPointModal .modal-body');
     if (modalBody) {
         const activeUser = getActiveUser();
         let recentRecord = null;
-        
+
         // Ищем запись ТОЛЬКО текущего активного пользователя за СЕГОДНЯ.
         // У каждого аккаунта — своя история, чужие записи не подставляются.
         if (activeUser) {
@@ -751,16 +763,16 @@ function showPointCard(pathology, point) {
                 recentRecord = matching[0];
             }
         }
-        
+
         const savedElediya = recentRecord?.measurements?.elediya ?? '';
         const savedFolLeft = recentRecord?.measurements?.folLeft ?? '';
         const savedFolRight = recentRecord?.measurements?.folRight ?? '';
-        
+
         const measurementSection = document.createElement('div');
         measurementSection.id = 'modalMeasurementSection';
         measurementSection.className = 'mt-3 p-2 border rounded';
         measurementSection.style.background = '#f8f9fa';
-        
+
         let hint;
         if (!activeUser) {
             hint = 'Нет активного пользователя. Нажмите ✓ на фото — попросим ввести имя.';
@@ -769,7 +781,7 @@ function showPointCard(pathology, point) {
         } else {
             hint = `Введите значения и нажмите ✓ на фото (или кнопку «Записать»). Пользователь: ${activeUser.name}.`;
         }
-        
+
         measurementSection.innerHTML = `
             <strong>Показания приборов:</strong>
             <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
@@ -792,7 +804,7 @@ function showPointCard(pathology, point) {
             <small class="text-muted d-block mt-1">${hint}</small>
         `;
         modalBody.appendChild(measurementSection);
-        
+
         const saveBtn = document.getElementById('modalSaveMeasurementBtn');
         if (saveBtn) {
             saveBtn.addEventListener('click', (e) => {
@@ -803,11 +815,11 @@ function showPointCard(pathology, point) {
             });
         }
     }
-    
+
     // ========== ЧЕКБОКС НА ФОТО ==========
     const oldCheck = document.getElementById('pointCheckButton');
     if (oldCheck) oldCheck.remove();
-    
+
     if (carouselContainer.style.display !== 'none') {
         const checkBtn = document.createElement('div');
         checkBtn.id = 'pointCheckButton';
@@ -830,7 +842,7 @@ function showPointCard(pathology, point) {
             justify-content: center;
         `;
         checkBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
-        
+
         // === Галочка активна, если у ТЕКУЩЕГО пользователя есть запись за СЕГОДНЯ ===
         const activeUser = getActiveUser();
         let isFresh = false;
@@ -843,13 +855,13 @@ function showPointCard(pathology, point) {
             }
         }
         checkBtn.style.color = isFresh ? 'rgba(40, 167, 69, 1)' : 'rgba(40, 167, 69, 0.3)';
-        
+
         checkBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             handleSaveMeasurement(pathology, point, checkBtn);
         });
-        
+
         const pointCarousel = document.getElementById('pointCarousel');
         if (pointCarousel) {
             pointCarousel.style.position = 'relative';
@@ -901,18 +913,18 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
     const imagesInput = document.getElementById('pointImages')?.value.trim();
     const editPathologyEl = document.getElementById('editPathology');
     const editIndexEl = document.getElementById('editIndex');
-    
+
     if (!pathologyInputRaw || !pointNameRaw || !dispersion) {
         alert('Заполните обязательные поля');
         return;
     }
-    
+
     const editPathologyName = editPathologyEl?.value;
     const editIdx = parseInt(editIndexEl?.value);
     const isEditing = editPathologyName && !isNaN(editIdx) && editIdx >= 0;
-    
+
     const LOCALE_SUFFIX = '_Locale';
-    
+
     // === Приставка _Locale для НОВОЙ точки ===
     // Если это не редактирование и имя ещё не содержит суффикс — добавляем.
     // Так пользовательская точка никогда не совпадёт по имени с базовой
@@ -921,7 +933,7 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
     if (!isEditing && !pointName.endsWith(LOCALE_SUFFIX)) {
         pointName = pointName + LOCALE_SUFFIX;
     }
-    
+
     // === Приставка _Locale для НОВОЙ патологии ===
     // Патология считается «новой», если её нет в текущем pathologiesData.
     // (Т.е. она не пришла из point.json и не была создана ранее.)
@@ -930,14 +942,14 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
     if (!existingPathology && !pathologyInput.endsWith(LOCALE_SUFFIX)) {
         pathologyInput = pathologyInput + LOCALE_SUFFIX;
     }
-    
+
     let images = [];
     if (imagesInput) {
         images = imagesInput.split(',').map(s => s.trim()).filter(s => s);
     }
-    
+
     const newPoint = { name: pointName, dispersion, description, images };
-    
+
     if (isEditing) {
         const oldPathology = pathologiesData.find(p => p.name === editPathologyName);
         if (oldPathology) {
@@ -961,7 +973,7 @@ document.getElementById('savePointBtn')?.addEventListener('click', () => {
         }
         pathology.point.push(newPoint);
     }
-    
+
     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
     afterDataChange();
     pointModal.hide();
@@ -972,12 +984,12 @@ function isValidImageUrl(str) {
     if (!str || typeof str !== 'string') return false;
     const trimmed = str.trim();
     if (trimmed === '') return false;
-    return trimmed.includes('/') || 
-           trimmed.includes('http') || 
-           trimmed.includes('.jpg') || 
-           trimmed.includes('.png') || 
-           trimmed.includes('.jpeg') || 
-           trimmed.includes('.gif') || 
+    return trimmed.includes('/') ||
+           trimmed.includes('http') ||
+           trimmed.includes('.jpg') ||
+           trimmed.includes('.png') ||
+           trimmed.includes('.jpeg') ||
+           trimmed.includes('.gif') ||
            trimmed.includes('.webp') ||
            trimmed.startsWith('data:image');
 }
@@ -1025,14 +1037,14 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
         } catch (e) { console.warn('Не удалось прочитать пользовательские нозоды:', e); }
 
         if (userPoints.length === 0 && userNozodes.length === 0) {
-    alert(
-        'Нет созданных вами записей о точках или нозодах.\n\n' +
-        'Экспортируются только созданные вами записи — чтобы ими ' +
-        'можно было поделиться или перенести на другое устройство.\n\n' +
-        'Базовые точки и нозоды уже вшиты в программу и в экспорт не попадают.'
-    );
-    return;
-}
+            alert(
+                'Нет созданных вами записей о точках или нозодах.\n\n' +
+                'Экспортируются только созданные вами записи — чтобы ими ' +
+                'можно было поделиться или перенести на другое устройство.\n\n' +
+                'Базовые точки и нозоды уже вшиты в программу и в экспорт не попадают.'
+            );
+            return;
+        }
 
         const escapeCSV = (str) => {
             if (str === undefined || str === null) return '';
@@ -1084,6 +1096,11 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
             ]);
         });
 
+        if (rows.length < 2) {
+            alert('Нет данных для экспорта: все записи отфильтрованы.');
+            return;
+        }
+
         const csvContent = rows.map(row => row.join(',')).join('\n');
         const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
 
@@ -1105,6 +1122,7 @@ document.getElementById('btn-export-csv')?.addEventListener('click', () => {
         alert('Ошибка при экспорте данных');
     }
 });
+
 // ========== ІМПОРТ ==========
 document.getElementById('btn-import-csv')?.addEventListener('click', () => {
     document.getElementById('import-file')?.click();
@@ -1115,19 +1133,20 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    // === ИЗМЕНЕНО: async, чтобы можно было использовать await showConfirm ===
+    reader.onload = async (e) => {
         const text = e.target.result;
         const cleanText = text.replace(/^\uFEFF/, '');
-        
+
         const rows = [];
         let currentRow = [];
         let currentCell = '';
         let inQuotes = false;
-        
+
         for (let i = 0; i < cleanText.length; i++) {
             const char = cleanText[i];
             const nextChar = cleanText[i + 1];
-            
+
             if (char === '"') {
                 if (inQuotes && nextChar === '"') {
                     currentCell += '"';
@@ -1151,48 +1170,48 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
             currentRow.push(currentCell);
             rows.push(currentRow);
         }
-        
+
         if (rows.length === 0) {
             alert('Файл порожній');
             return;
         }
-        
+
         const header = rows[0];
-        
+
         if (!header || header.length < 4 || !header[0].includes('Патология')) {
             alert('Неправильний формат CSV файлу. Очікується: Патология, Название точки, Расположение, Описание, Ссылки на фото');
             return;
         }
-        
+
         const pathIdx = 0;
         const pointIdx = 1;
         const dispIdx = 2;
         const descIdx = 3;
         const imgIdx = 4;
-        
+
         let addedCount = 0;
         let updatedCount = 0;
         let skippedCount = 0;
         let imagesAddedCount = 0;
         let imagesSkippedCount = 0;
-        
+
         const originalData = JSON.parse(JSON.stringify(pathologiesData));
-        
+
         for (let i = 1; i < rows.length; i++) {
             const row = rows[i];
             if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
-            
+
             const pathologyName = (row[pathIdx] || '').trim();
             const pointName = (row[pointIdx] || '').trim();
             const dispersion = (row[dispIdx] || '').trim();
             const description = (row[descIdx] || '').trim();
             const imagesStr = row.length > imgIdx ? (row[imgIdx] || '').trim() : '';
-            
+
             if (!pathologyName || !pointName) {
                 skippedCount++;
                 continue;
             }
-            
+
             let newImages = [];
             if (imagesStr) {
                 let rawImages = [];
@@ -1205,21 +1224,21 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                 }
                 newImages = rawImages.map(s => s.trim()).filter(img => isValidImageUrl(img));
             }
-            
+
             let pathology = pathologiesData.find(p => p.name === pathologyName);
-            
+
             if (!pathology) {
                 pathology = { name: pathologyName, links: [], point: [] };
                 pathologiesData.push(pathology);
                 addedCount++;
             }
-            
+
             const existingPoint = pathology.point.find(p => p.name === pointName);
-            
+
             if (existingPoint) {
                 let needsUpdate = false;
                 let changes = [];
-                
+
                 if (description && description.length > 0) {
                     const currentDesc = existingPoint.description || '';
                     if (currentDesc === '' || (description.length > currentDesc.length && currentDesc.length < 10)) {
@@ -1228,7 +1247,7 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                         changes.push('опис');
                     }
                 }
-                
+
                 if (dispersion && dispersion.length > 0) {
                     const currentDisp = existingPoint.dispersion || '';
                     if (currentDisp === '' || (dispersion.length > currentDisp.length && currentDisp.length < 10)) {
@@ -1237,11 +1256,11 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                         changes.push('розташування');
                     }
                 }
-                
+
                 const currentImages = existingPoint.images || [];
                 const hasCurrentValidImages = hasValidImages(currentImages);
                 const hasNewValidImages = newImages.length > 0;
-                
+
                 if (hasNewValidImages) {
                     if (!hasCurrentValidImages) {
                         existingPoint.images = newImages;
@@ -1250,12 +1269,13 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                         changes.push(`фото (додано ${newImages.length})`);
                     }
                     else if (!areImagesEqual(currentImages, newImages)) {
-                        const updateChoice = confirm(
+                        // === ИЗМЕНЕНО: await showConfirm ===
+                        const updateChoice = await showConfirm(
                             `Точка "${pointName}" вже має фото:\n${currentImages.join('\n')}\n\n` +
                             `Замінити на фото з CSV?\n${newImages.join('\n')}\n\n` +
-                            `Натисніть OK для заміни, Cancel для збереження поточних`
+                            `OK — замінити, Отмена — сохранить текущие`
                         );
-                        
+
                         if (updateChoice) {
                             existingPoint.images = newImages;
                             needsUpdate = true;
@@ -1267,7 +1287,7 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                         }
                     }
                 }
-                
+
                 if (needsUpdate) {
                     updatedCount++;
                 }
@@ -1284,10 +1304,10 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                 }
             }
         }
-        
+
         if (addedCount > 0 || updatedCount > 0) {
             const hasChanges = JSON.stringify(originalData) !== JSON.stringify(pathologiesData);
-            
+
             if (hasChanges) {
                 let confirmMessage = `Знайдено нові дані в CSV:\n`;
                 confirmMessage += `- Додано точок: ${addedCount}\n`;
@@ -1302,21 +1322,24 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
                     confirmMessage += `- Пропущено рядків: ${skippedCount}\n`;
                 }
                 confirmMessage += `\nПродовжити імпорт?`;
-                
-                if (confirm(confirmMessage)) {
+
+                // === ИЗМЕНЕНО: await showConfirm ===
+                const proceed = await showConfirm(confirmMessage);
+
+                if (proceed) {
                     pathologiesData.sort((a, b) => a.name.localeCompare(b.name));
                     pathologiesData.forEach(pathology => {
                         pathology.point.sort((a, b) => a.name.localeCompare(b.name));
                     });
-                    
+
                     afterDataChange();
-                    
+
                     let message = `Імпорт завершено: додано ${addedCount} точок, оновлено ${updatedCount} точок`;
                     if (imagesAddedCount > 0) message += `, фото: ${imagesAddedCount}`;
                     if (imagesSkippedCount > 0) message += `, збережено фото: ${imagesSkippedCount}`;
                     if (skippedCount > 0) message += `, пропущено: ${skippedCount}`;
                     showToast(message);
-                    
+
                     if (currentPage === 'search') {
                         renderPathologyCheckboxes();
                     } else if (currentPage === 'main') {
@@ -1333,11 +1356,11 @@ document.getElementById('import-file')?.addEventListener('change', (e) => {
             showToast('Немає нових даних для імпорту');
         }
     };
-    
+
     reader.onerror = () => {
         alert('Помилка читання файлу');
     };
-    
+
     reader.readAsText(file, 'UTF-8');
     e.target.value = '';
 });
@@ -1373,10 +1396,10 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
     const allPoints = [];
     pathologiesData.forEach(pathology => {
         pathology.point.forEach(point => {
-            allPoints.push({ 
-                ...point, 
-                pathologyName: pathology.name, 
-                pathologyLinks: pathology.links || [] 
+            allPoints.push({
+                ...point,
+                pathologyName: pathology.name,
+                pathologyLinks: pathology.links || []
             });
         });
     });
@@ -1389,10 +1412,10 @@ document.getElementById('pointSearchInput')?.addEventListener('input', function(
     } else if (matched.length === 1) {
         resultsDiv.innerHTML = '';
         const point = matched[0];
-        const pathologiesWithPoint = pathologiesData.filter(p => 
+        const pathologiesWithPoint = pathologiesData.filter(p =>
             p.point.some(pt => pt.name === point.name)
         ).map(p => p.name);
-        
+
         let html = `<div class="alert alert-info p-2">
             <strong>${point.name}</strong><br>
             <small>Встречается в: ${pathologiesWithPoint.join(', ')}</small><br>
@@ -1616,15 +1639,15 @@ function deleteUser(userId) {
 function addRecord(pointData) {
     const { pointName, pathologyName, dispersion } = pointData;
     if (!pointName || !pathologyName) return null;
-    
+
     const activeUser = getActiveUser();
     if (!activeUser) return null;
-    
+
     let shortArea = 'другое';
     if (dispersion && dispersion.includes(':')) {
         shortArea = dispersion.split(':')[0].trim();
     }
-    
+
     const newRecord = {
         id: Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         userId: activeUser.id,
@@ -1639,7 +1662,7 @@ function addRecord(pointData) {
             saved: false
         }
     };
-    
+
     const history = loadHistory();
     history.records.push(newRecord);
     saveHistory(history);
@@ -1664,21 +1687,21 @@ function renderHistoryPage() {
     const recordsContainer = document.getElementById('userRecordsContainer');
     const selectedUserNameEl = document.getElementById('selectedUserName');
     const recordsListEl = document.getElementById('recordsList');
-    
+
     if (!accordion || !recordsContainer || !selectedUserNameEl || !recordsListEl) return;
-    
+
     accordion.innerHTML = '';
-    
+
     if (users.length === 0) {
         accordion.innerHTML = '<p class="text-muted">Нет пользователей. Добавьте имя.</p>';
         recordsContainer.style.display = 'none';
         return;
     }
-    
+
     users.forEach((user, index) => {
         const itemId = `user-item-${index}`;
         const isActiveClass = user.isActive ? 'active-user' : '';
-        
+
         const accordionItem = document.createElement('div');
         accordionItem.className = 'accordion-item';
         accordionItem.innerHTML = `
@@ -1695,19 +1718,19 @@ function renderHistoryPage() {
         `;
         accordion.appendChild(accordionItem);
     });
-    
+
     document.querySelectorAll('#usersAccordion .accordion-button').forEach(btn => {
         btn.addEventListener('click', (e) => {
             if (e.target.closest('.delete-user')) return;
-            
+
             const userId = btn.dataset.userId;
             if (!userId) return;
-            
+
             setActiveUser(userId);
             updateMainPageGreeting();
             updateActiveUserDisplay();
             showUserRecords(userId);
-            
+
             const openCollapse = document.querySelector('#usersAccordion .accordion-collapse.show');
             if (openCollapse) {
                 const collapse = bootstrap.Collapse.getInstance(openCollapse);
@@ -1715,18 +1738,20 @@ function renderHistoryPage() {
             }
         });
     });
-    
+
     document.querySelectorAll('.delete-user').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+        // === ИЗМЕНЕНО: async + await showConfirm ===
+        btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const userId = btn.dataset.userId;
-            if (confirm('Удалить пользователя и все его записи?')) {
+            const ok = await showConfirm('Удалить пользователя и все его записи?');
+            if (ok) {
                 deleteUser(userId);
                 renderHistoryPage();
             }
         });
     });
-    
+
     const activeUser = getActiveUser();
     if (activeUser) {
         showUserRecords(activeUser.id);
@@ -1735,7 +1760,7 @@ function renderHistoryPage() {
     } else {
         recordsContainer.style.display = 'none';
     }
-    
+
     updateActiveUserDisplay();
 }
 
@@ -1743,19 +1768,19 @@ function showUserRecords(userId) {
     const selectedUserNameEl = document.getElementById('selectedUserName');
     const recordsListEl = document.getElementById('recordsList');
     if (!selectedUserNameEl || !recordsListEl) return;
-    
+
     chartState.userId = userId;
-    
+
     const user = getAllUsers().find(u => u.id === userId);
     selectedUserNameEl.textContent = user ? `Записи пользователя: ${user.name}` : '';
-    
+
     const records = getRecordsByUser(userId);
     if (records.length === 0) {
         recordsListEl.innerHTML = '<p class="text-muted">Нет записей</p>';
         if (chartState.mode === 'chart') renderFolChart(userId);
         return;
     }
-    
+
     const groupedByDate = {};
     records.forEach(rec => {
         const date = new Date(rec.timestamp);
@@ -1763,7 +1788,7 @@ function showUserRecords(userId) {
         if (!groupedByDate[dateStr]) groupedByDate[dateStr] = [];
         groupedByDate[dateStr].push(rec);
     });
-    
+
     const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
         const [d1, m1, y1] = a.split('.').map(Number);
         const [d2, m2, y2] = b.split('.').map(Number);
@@ -1771,21 +1796,21 @@ function showUserRecords(userId) {
         const dateB = new Date(y2, m2 - 1, d2);
         return dateB - dateA;
     });
-    
+
     let html = '';
     sortedDates.forEach(dateStr => {
         const dayRecords = groupedByDate[dateStr];
-        
+
         const byPathology = {};
         dayRecords.forEach(rec => {
             if (!byPathology[rec.pathologyName]) byPathology[rec.pathologyName] = [];
             byPathology[rec.pathologyName].push(rec);
         });
-        
+
         const sortedPathologies = Object.keys(byPathology).sort((a, b) => a.localeCompare(b));
-        
+
         const dateId = 'date-' + dateStr.replace(/\./g, '-');
-        
+
         html += `
             <div class="date-group mb-2">
                 <div class="date-header p-2 bg-light border rounded" data-target="${dateId}" style="cursor: pointer; user-select: none;">
@@ -1793,14 +1818,14 @@ function showUserRecords(userId) {
                 </div>
                 <div id="${dateId}" class="date-records collapse">
         `;
-        
+
         sortedPathologies.forEach(pathology => {
             const pathRecords = byPathology[pathology];
             pathRecords.sort((a, b) => a.timestamp - b.timestamp);
-            
+
             html += `<div class="ms-3 mt-2"><em>${pathology}</em></div>`;
             html += `<div class="ms-4">`;
-            
+
             pathRecords.forEach(rec => {
                 const time = new Date(rec.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
                 const shortName = rec.pointName.split('/')[0].trim();
@@ -1808,10 +1833,10 @@ function showUserRecords(userId) {
                 const elediyaVal = rec.measurements?.elediya !== null && rec.measurements?.elediya !== undefined ? rec.measurements.elediya : '';
                 const folLeftVal = rec.measurements?.folLeft !== null && rec.measurements?.folLeft !== undefined ? rec.measurements.folLeft : '';
                 const folRightVal = rec.measurements?.folRight !== null && rec.measurements?.folRight !== undefined ? rec.measurements.folRight : '';
-                
+
                 const folLeftClass = getFolClass(folLeftVal);
                 const folRightClass = getFolClass(folRightVal);
-                
+
                 html += `
                     <div class="record-row mb-2 p-1 border rounded" data-record-id="${rec.id}">
                         <div class="d-flex flex-wrap gap-1 align-items-center">
@@ -1837,15 +1862,15 @@ function showUserRecords(userId) {
                     </div>
                 `;
             });
-            
+
             html += `</div>`;
         });
-        
+
         html += `</div></div>`;
     });
-    
+
     recordsListEl.innerHTML = html;
-    
+
     document.querySelectorAll('.date-header').forEach(header => {
         header.addEventListener('click', () => {
             const targetId = header.dataset.target;
@@ -1856,7 +1881,7 @@ function showUserRecords(userId) {
             }
         });
     });
-    
+
     document.querySelectorAll('.save-measurement').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1866,20 +1891,20 @@ function showUserRecords(userId) {
             const elediyaInput = recordRow.querySelector('.elediya-input');
             const folLeftInput = recordRow.querySelector('.fol-left-input');
             const folRightInput = recordRow.querySelector('.fol-right-input');
-            
+
             const elediyaVal = elediyaInput.value.trim();
             const folLeftVal = folLeftInput.value.trim();
             const folRightVal = folRightInput.value.trim();
-            
+
             if (elediyaVal === '' && folLeftVal === '' && folRightVal === '') {
                 alert('Введите хотя бы одно значение');
                 return;
             }
-            
+
             const history = loadHistory();
             const record = history.records.find(r => r.id === recordId);
             if (!record) return;
-            
+
             record.measurements = {
                 elediya: elediyaVal !== '' ? parseFloat(elediyaVal) : null,
                 folLeft: folLeftVal !== '' ? parseFloat(folLeftVal) : null,
@@ -1887,17 +1912,17 @@ function showUserRecords(userId) {
                 saved: true
             };
             saveHistory(history);
-            
+
             elediyaInput.disabled = true;
             folLeftInput.disabled = true;
             folRightInput.disabled = true;
             btn.remove();
-            
+
             if (folLeftVal !== '') folLeftInput.classList.add(getFolClass(folLeftVal));
             if (folRightVal !== '') folRightInput.classList.add(getFolClass(folRightVal));
         });
     });
-    
+
     document.querySelectorAll('.point-history-link').forEach(link => {
         link.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1908,7 +1933,7 @@ function showUserRecords(userId) {
             if (point) showPointCard(pathology, point);
         });
     });
-    
+
     if (chartState.mode === 'chart') {
         renderFolChart(userId);
     }
@@ -2280,7 +2305,7 @@ document.getElementById('viewModeChart')?.addEventListener('click', () => setHis
 // ========== ІНІЦІАЛІЗАЦІЯ ==========
 document.addEventListener('DOMContentLoaded', () => {
     appStorage.migrateIfNeeded();
-    
+
     const pathInput = document.getElementById('pointPathology');
     if (pathInput) {
         pathInput.setAttribute('autocomplete', 'off');
@@ -2288,7 +2313,7 @@ document.addEventListener('DOMContentLoaded', () => {
         pathInput.setAttribute('autocapitalize', 'off');
         pathInput.setAttribute('spellcheck', 'false');
     }
-    
+
     loadData();
     initNavigation();
     updateTimerDisplay();
